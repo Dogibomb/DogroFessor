@@ -1,4 +1,4 @@
-from Lol_Api.api_key import API_KEY
+from api_key import API_KEY
 import requests
 
 # Funkce ktera prevede jmeno na puuid
@@ -22,9 +22,10 @@ def get_summoners_level(puuid):
 
     return summoners_name, summoners_level
 
-def print_user_info(summoners_name, summoners_level):
+def print_user_info(summoners_name, summoners_level, puuid):
     print("Ikona: " + summoners_name)
     print("Level: " + summoners_level)
+    print("puuid: " + puuid)
 
 
 def get_champions_info():
@@ -44,33 +45,72 @@ def get_free_champions():
         for key, value in champions.items():
             if int(value['key']) == i:
                 print(value['name'])
+
+def get_champions_info_by_puuid():
+    puuid = input("Enter Puuid: ")
+    api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
+    api_url = api_url + '?api_key=' + API_KEY
+    response = requests.get(api_url)
+    summoners_name = str(response.json()['gameName'])
+    summoners_tag = str(response.json()['tagLine'])
+    print("Summoner name: " + summoners_name)
+    print("Summoner tag: " + summoners_tag)
+
     
-
-
-
-
-
 champions = get_champions_info()
 
-print("Information table about Lol")
-print("For Summoner info press 1")
-print("For Free Champion info press 2")
+
 
 user_input = ''
 
 while(True):
+    
+    print("-------------------------------")
+
+    print("Information table about Lol")
+    print("For Summoner info press 1")
+    print("For Free Champion info press 2")
+    print("For LeagueV4 press 3")
+    print("For Convert puuid to name press 4")
+    print("For Clash info press 5")
+    print("To exit press x")
+
+    print("-------------------------------")
+
     user_input = input("Enter your choice: ")
+
+    print("-------------------------------")
 
     if user_input == "1":
         puuid = get_puuid()
-        summoners_name, summoners_level = get_summoners_level(puuid)
-        print_user_info(summoners_name, summoners_level)
+        summoners_name, summoners_level, = get_summoners_level(puuid)
+        print_user_info(summoners_name, summoners_level, puuid)
         
     elif user_input == "2":
         get_free_champions()
 
-    if user_input == "x":
+    #elif user_input == "3":
+        # LeagueV4
+    
+    elif user_input == "4":
+        get_champions_info_by_puuid()
+    
+    elif user_input == "5":
+        puuid = input("Enter one summoners puuid from the clash team: ")
+        clash_url = "https://eun1.api.riotgames.com/lol/clash/v1/players/by-puuid/" + puuid
+        clash_url = clash_url + '?api_key=' + API_KEY
+        response = requests.get(clash_url)
+        teamid = response.json()[0]["teamId"]
+        clash_url_team = "https://eun1.api.riotgames.com/lol/clash/v1/teams/" + str(teamid)
+        clash_url_team = clash_url_team + '?api_key=' + API_KEY
+        response = requests.get(clash_url_team)
+        print("Clash team name: " + str(response.json()['name']))
+        print("Players in the team and their positions: " + str(response.json()['players']))
+
+    elif user_input == "x":
         break
     
     else:
         print("Wrong input")
+
+    
