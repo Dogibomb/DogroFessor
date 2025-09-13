@@ -46,6 +46,15 @@ def get_free_champions():
             if int(value['key']) == i:
                 print(value['name'])
 
+def get_champions_info_by_puuid_without_input(puuid):
+    api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
+    api_url = api_url + '?api_key=' + API_KEY
+    response = requests.get(api_url)
+    summoners_name = str(response.json()['gameName'])
+    summoners_tag = str(response.json()['tagLine'])
+
+    return summoners_name, summoners_tag
+
 def get_champions_info_by_puuid():
     puuid = input("Enter Puuid: ")
     api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
@@ -56,7 +65,25 @@ def get_champions_info_by_puuid():
     print("Summoner name: " + summoners_name)
     print("Summoner tag: " + summoners_tag)
 
-    
+def clash_info():
+    puuid = input("Enter one summoners puuid from the clash team: ")
+    clash_url = "https://eun1.api.riotgames.com/lol/clash/v1/players/by-puuid/" + puuid
+    clash_url = clash_url + '?api_key=' + API_KEY
+    response = requests.get(clash_url)
+    teamid = response.json()[0]["teamId"]
+    clash_url_team = "https://eun1.api.riotgames.com/lol/clash/v1/teams/" + str(teamid)
+    clash_url_team = clash_url_team + '?api_key=' + API_KEY
+    response = requests.get(clash_url_team)
+
+    print("Clash team name: " + str(response.json()['name']))
+    print("Players in the team and their positions: ")
+
+    for player in response.json()['players']:
+        player_puuid = player["puuid"]
+        summoners_name, summoners_tag = get_champions_info_by_puuid_without_input(player_puuid)
+        print(f"- {summoners_name}#{summoners_tag} | Position: {player['position']} | Role: {player['role']}")
+
+
 champions = get_champions_info()
 
 
@@ -96,16 +123,7 @@ while(True):
         get_champions_info_by_puuid()
     
     elif user_input == "5":
-        puuid = input("Enter one summoners puuid from the clash team: ")
-        clash_url = "https://eun1.api.riotgames.com/lol/clash/v1/players/by-puuid/" + puuid
-        clash_url = clash_url + '?api_key=' + API_KEY
-        response = requests.get(clash_url)
-        teamid = response.json()[0]["teamId"]
-        clash_url_team = "https://eun1.api.riotgames.com/lol/clash/v1/teams/" + str(teamid)
-        clash_url_team = clash_url_team + '?api_key=' + API_KEY
-        response = requests.get(clash_url_team)
-        print("Clash team name: " + str(response.json()['name']))
-        print("Players in the team and their positions: " + str(response.json()['players']))
+        clash_info()
 
     elif user_input == "x":
         break
