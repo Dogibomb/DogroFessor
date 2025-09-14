@@ -12,20 +12,30 @@ def get_puuid():
 
     return puuid
 
-# Funkce ktera prevede puuid na level a ikonu
+# Funkce ktera prevede puuid na level a ikonu, rank ...
 def get_summoners_level(puuid):
     api_url1 = "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/" + puuid
     api_url1 = api_url1 + '?api_key=' + API_KEY
-    response = requests.get(api_url1)
-    summoners_name = str(response.json()['profileIconId'])
-    summoners_level = str(response.json()['summonerLevel'])
+    api_url2 = "https://eun1.api.riotgames.com/lol/league/v4/entries/by-puuid/" + puuid
+    api_url2 = api_url2 + '?api_key=' + API_KEY
+    response_rank = requests.get(api_url2)
+    response_level = requests.get(api_url1)
+    summoners_name = str(response_level.json()['profileIconId'])
+    summoners_level = str(response_level.json()['summonerLevel'])
+    summoners_rank = response_rank.json()
 
-    return summoners_name, summoners_level
+    return summoners_name, summoners_level, summoners_rank
 
-def print_user_info(summoners_name, summoners_level, puuid):
+def print_user_info(summoners_name, summoners_level, puuid , summoners_rank):
     print("Ikona: " + summoners_name)
     print("Level: " + summoners_level)
     print("puuid: " + puuid)
+
+    solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
+    flex_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
+
+    print("Rank in Solo/Duo: " + str(solo_duo_rank["queueType"]) + " " + str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"]) + " " + str(solo_duo_rank["leaguePoints"]) + "LP")
+    print("Rank in Flex: " + str(flex_rank["queueType"]) + " " + str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"]) + "LP")
 
 
 def get_champions_info():
@@ -66,7 +76,7 @@ def get_champions_info_by_puuid():
     print("Summoner tag: " + summoners_tag)
 
 def clash_info():
-    puuid = input("Enter one summoners puuid from the clash team: ")
+    puuid = input("Enter one summoner puuid from the clash team: ")
     clash_url = "https://eun1.api.riotgames.com/lol/clash/v1/players/by-puuid/" + puuid
     clash_url = clash_url + '?api_key=' + API_KEY
     response = requests.get(clash_url)
@@ -110,8 +120,8 @@ while(True):
 
     if user_input == "1":
         puuid = get_puuid()
-        summoners_name, summoners_level, = get_summoners_level(puuid)
-        print_user_info(summoners_name, summoners_level, puuid)
+        summoners_name, summoners_level, summoners_rank = get_summoners_level(puuid)
+        print_user_info(summoners_name, summoners_level, puuid, summoners_rank)
         
     elif user_input == "2":
         get_free_champions()
