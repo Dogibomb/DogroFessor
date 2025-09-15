@@ -57,6 +57,11 @@ def get_free_champions():
     free_champions_url = "https://eun1.api.riotgames.com/lol/platform/v3/champion-rotations"
     free_champions_url = free_champions_url + '?api_key=' + API_KEY
     response = requests.get(free_champions_url)
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        return None
+
     free_champions = response.json()
 
     for i in free_champions['freeChampionIds']:
@@ -68,30 +73,57 @@ def get_champions_info_by_puuid_without_input(puuid):
     api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
     api_url = api_url + '?api_key=' + API_KEY
     response = requests.get(api_url)
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        print("Invalid puuid")
+        return None
+
     summoners_name = str(response.json()['gameName'])
     summoners_tag = str(response.json()['tagLine'])
 
     return summoners_name, summoners_tag
 
-def get_champions_info_by_puuid():
+def get_User_info_by_puuid():
     puuid = input("Enter Puuid: ")
     api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
     api_url = api_url + '?api_key=' + API_KEY
     response = requests.get(api_url)
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        print("Invalid puuid")
+        return None
+
     summoners_name = str(response.json()['gameName'])
     summoners_tag = str(response.json()['tagLine'])
     print("Summoner name: " + summoners_name)
     print("Summoner tag: " + summoners_tag)
 
 def clash_info():
-    puuid = input("Enter one summoner puuid from the clash team: ")
+    puuid = get_puuid()
     clash_url = "https://eun1.api.riotgames.com/lol/clash/v1/players/by-puuid/" + puuid
     clash_url = clash_url + '?api_key=' + API_KEY
     response = requests.get(clash_url)
-    teamid = response.json()[0]["teamId"]
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        print("This player is not in clash team or invalid name/tag")
+        return None
+
+    try:
+        teamid = response.json()[0]["teamId"]
+    except (KeyError, IndexError):
+        print("This player is not in clash team or invalid puuid")
+        return None
+
     clash_url_team = "https://eun1.api.riotgames.com/lol/clash/v1/teams/" + str(teamid)
     clash_url_team = clash_url_team + '?api_key=' + API_KEY
     response = requests.get(clash_url_team)
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        return None
 
     print("Clash team name: " + str(response.json()['name']))
     print("Players in the team and their positions: ")
@@ -102,7 +134,7 @@ def clash_info():
         print(f"- {summoners_name}#{summoners_tag} | Position: {player['position']} | Role: {player['role']}")
 
 
-champions = get_champions_info()
+
 
 
 
@@ -131,10 +163,11 @@ while(True):
         print_user_info(summoners_name, summoners_level, puuid, summoners_rank)
         
     elif user_input == "2":
+        champions = get_champions_info()
         get_free_champions()
     
     elif user_input == "3":
-        get_champions_info_by_puuid()
+        get_User_info_by_puuid()
     
     elif user_input == "4":
         clash_info()
