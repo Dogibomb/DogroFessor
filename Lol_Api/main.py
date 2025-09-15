@@ -14,10 +14,6 @@ def get_puuid():
         return None
     
     data = response.json()
-    if "puuid" not in data:
-        print("No puuid found. Response:", data)
-        return None
-    
     return data["puuid"]
 
 # Funkce ktera prevede puuid na level a ikonu, rank ...
@@ -28,6 +24,15 @@ def get_summoners_level(puuid):
     api_url2 = api_url2 + '?api_key=' + API_KEY
     response_rank = requests.get(api_url2)
     response_level = requests.get(api_url1)
+
+    if response_level.status_code != 200:
+        print("Error:", response_level.json()["status"]["status_code"])
+        return None
+
+    if response_rank.status_code != 200:
+        print("Error:", response_rank.json()["status"]["status_code"])
+        return None
+
     summoners_name = str(response_level.json()['profileIconId'])
     summoners_level = str(response_level.json()['summonerLevel'])
     summoners_rank = response_rank.json()
@@ -133,9 +138,26 @@ def clash_info():
         summoners_name, summoners_tag = get_champions_info_by_puuid_without_input(player_puuid)
         print(f"- {summoners_name}#{summoners_tag} | Position: {player['position']} | Role: {player['role']}")
 
+def get_user_match_history():
+    puuid = get_puuid()
+    api_url_ranked_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?type=ranked&start=0&count=20"
+    api_url_normal_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?type=normal&start=0&count=20"
+    response_ranked = requests.get(api_url_ranked_matches + '&api_key=' + API_KEY)
+    response_normal = requests.get(api_url_normal_matches + '&api_key=' + API_KEY)
 
+    if response_ranked.status_code != 200:
+        print("Error:", response_ranked.json()["status"]["status_code"])
+        return None
+    if response_normal.status_code != 200:
+        print("Error:", response_normal.json()["status"]["status_code"])
+        return None
 
+    ranked_matches = response_ranked.json()
+    normal_matches = response_normal.json()
 
+    print("Last 20 ranked matches IDs:")
+    for match in ranked_matches:
+        print(match)
 
 
 user_input = ''
@@ -146,9 +168,10 @@ while(True):
 
     print("Information table about Lol")
     print("For Summoner info press 1")
-    print("For Free Champion info press 2")
-    print("For Convert puuid to name press 3")
-    print("For Clash info press 4")
+    print("For Clash info press 2")
+    print("For User Match History press 3")
+    print("For Free Champion info press 4")
+    print("For Convert puuid to name press 5")
     print("To exit press x")
 
     print("-------------------------------")
@@ -163,14 +186,17 @@ while(True):
         print_user_info(summoners_name, summoners_level, puuid, summoners_rank)
         
     elif user_input == "2":
+        clash_info()
+    
+    elif user_input == "3":
+        get_user_match_history()
+
+    elif user_input == "4":
         champions = get_champions_info()
         get_free_champions()
     
-    elif user_input == "3":
+    elif user_input == "5":
         get_User_info_by_puuid()
-    
-    elif user_input == "4":
-        clash_info()
 
     elif user_input == "x":
         break
