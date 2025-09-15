@@ -5,12 +5,20 @@ import requests
 def get_puuid():
     name = input("Enter your summoner name: ")
     hash_tag = input("Enter your hash tag: ")
-    puuid_url_finder = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/" + name + "/" + hash_tag
-    puuid_url_finder = puuid_url_finder + '?api_key=' + API_KEY
+    puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{hash_tag}?api_key={API_KEY}"
+    
     response = requests.get(puuid_url_finder)
-    puuid = response.json()['puuid']
-
-    return puuid
+    
+    if response.status_code != 200:
+        print("Error:", response.json())
+        return None
+    
+    data = response.json()
+    if "puuid" not in data:
+        print("No puuid found. Response:", data)
+        return None
+    
+    return data["puuid"]
 
 # Funkce ktera prevede puuid na level a ikonu, rank ...
 def get_summoners_level(puuid):
@@ -107,9 +115,8 @@ while(True):
     print("Information table about Lol")
     print("For Summoner info press 1")
     print("For Free Champion info press 2")
-    print("For LeagueV4 press 3")
-    print("For Convert puuid to name press 4")
-    print("For Clash info press 5")
+    print("For Convert puuid to name press 3")
+    print("For Clash info press 4")
     print("To exit press x")
 
     print("-------------------------------")
@@ -125,14 +132,11 @@ while(True):
         
     elif user_input == "2":
         get_free_champions()
-
-    #elif user_input == "3":
-        # LeagueV4
     
-    elif user_input == "4":
+    elif user_input == "3":
         get_champions_info_by_puuid()
     
-    elif user_input == "5":
+    elif user_input == "4":
         clash_info()
 
     elif user_input == "x":
