@@ -149,7 +149,7 @@ def clash_info():
 def get_user_normal_match_history():
     puuid = get_puuid()
     
-    api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=20"
+    api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=10"
     
     response_normal = requests.get(api_url_normal_matches + '&api_key=' + API_KEY)
    
@@ -166,7 +166,7 @@ def get_user_normal_match_history():
 
 def get_user_ranked_match_history():
     puuid = get_puuid()
-    api_url_ranked_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=ranked&start=0&count=20"
+    api_url_ranked_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=ranked&start=0&count=10"
 
     response_ranked = requests.get(api_url_ranked_matches + '&api_key=' + API_KEY)
 
@@ -190,8 +190,19 @@ def convert_match_ids(match_ids):
 
     
     #participants, gameDuration
-    for i in range(len(matchlist)):
-        print("Match ID: " + str(matchlist[i]["metadata"]["participants"]))
+    count = 0
+    for i,match in enumerate(matchlist, start=0):
+        print(f"Match {i+1}:")
+        players = match["metadata"]["participants"]
+        print("Players in the match:")
+        for player in players:
+            summoners_name = get_champions_info_by_puuid_without_input(player)
+            count += 1
+            print(f"- {summoners_name[0]}#")
+            if count == 5:
+                print("-----")
+                count = 0
+
 
 user_input = ''
 
