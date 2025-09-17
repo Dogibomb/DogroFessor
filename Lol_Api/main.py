@@ -10,10 +10,15 @@ def get_puuid():
 
         response = requests.get(puuid_url_finder)
 
-        if response.status_code == 200:
+        if response.status_code != 200:
+            print("Error:", response.json()["status"]["status_code"])
+            print("Invalid name/tag")
+            continue
+
+        elif response.status_code == 200:
             data = response.json()
             return data["puuid"]
-        if response.status_code == 404:
+        elif response.status_code == 404:
             print("Error:", response.json()["status"]["status_code"])
             print("Invalid name/tag")
             continue
@@ -172,17 +177,21 @@ def get_user_ranked_match_history():
     ranked_matches = response_ranked.json()
 
 def convert_match_ids(match_ids):
-    match_id1 = match_ids[0]
-    api_url_convertor = "https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id1
-    response = requests.get(api_url_convertor + '?api_key=' + API_KEY)
+    matchlist = []
+    for match_id in match_ids:
+        api_url_convertor = "https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id
+        response = requests.get(api_url_convertor + '?api_key=' + API_KEY)
+        matchlist.append(response.json())
+        
 
     if response.status_code != 200:
         print("Error:", response.json()["status"]["status_code"])
         return None
 
-    match_id1 = response.json()
+    
     #participants, gameDuration
-    print("Match ID: " + str(match_id1))
+    for i in range(len(matchlist)):
+        print("Match ID: " + str(matchlist[i]["metadata"]["participants"]))
 
 user_input = ''
 
