@@ -3,18 +3,21 @@ import requests
 
 # Funkce ktera prevede jmeno na puuid
 def get_puuid():
-    name = input("Enter your summoner name: ")
-    hash_tag = input("Enter your hash tag: ")
-    puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{hash_tag}?api_key={API_KEY}"
-    
-    response = requests.get(puuid_url_finder)
-    
-    if response.status_code != 200:
-        print("Error:", response.json())
-        return None
-    
-    data = response.json()
-    return data["puuid"]
+    while True:
+        name = input("Enter your summoner name: ")
+        hash_tag = input("Enter your hash tag: ")
+        puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{hash_tag}?api_key={API_KEY}"
+
+        response = requests.get(puuid_url_finder)
+
+        if response.status_code == 200:
+            data = response.json()
+            return data["puuid"]
+        if response.status_code == 404:
+            print("Error:", response.json()["status"]["status_code"])
+            print("Invalid name/tag")
+            continue
+
 
 # Funkce ktera prevede puuid na level a ikonu, rank ...
 def get_summoners_level(puuid):
@@ -140,9 +143,12 @@ def clash_info():
 
 def get_user_normal_match_history():
     puuid = get_puuid()
+    
     api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=20"
     
     response_normal = requests.get(api_url_normal_matches + '&api_key=' + API_KEY)
+   
+
 
     if response_normal.status_code != 200:
         print("Error:", response_normal.json()["status"]["status_code"])
