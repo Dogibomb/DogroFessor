@@ -46,7 +46,7 @@ def convert_match_ids(match_ids):
     
     #participants, gameDuration
     count = 0
-    for i,match in enumerate(matchlist, start=0):
+    for i, match in enumerate(matchlist, start=0):
         print(f"Match {i+1}:")
         players = match["metadata"]["participants"]
         print("Players in the match:")
@@ -54,11 +54,10 @@ def convert_match_ids(match_ids):
             summoners_info = get_champions_info_by_puuid_without_input(player)
             summoners_rank = get_summoners_level(player)
             
-            count += 1
-            print(f"- {summoners_info[0]}#{summoners_info[1]} | Rank: {summoners_rank[2]}")
-            if count == 5:
-                print("-----")
-                count = 0
+            solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
+
+            print(f"- {summoners_info[0]}#{summoners_info[1]} | Rank: {solo_duo_rank["tier"]} {solo_duo_rank["rank"]}")
+            count = 0
 
 
 user_input = ''
@@ -75,7 +74,7 @@ while(True):
     print("For Convert puuid to name press 5")
     print("To exit press x")
 
-    print("-------------------------------")
+    print("-------------------------------\n")
 
     user_input = input("Enter your choice: ")
 
