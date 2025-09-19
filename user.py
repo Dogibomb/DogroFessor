@@ -1,5 +1,6 @@
 from api_key import API_KEY
 import requests
+from PyQt5.QtWidgets import QInputDialog, QMessageBox
 
 def get_User_info_by_puuid():
     puuid = input("Enter Puuid: ")
@@ -54,8 +55,10 @@ def print_user_info(summoners_name, summoners_level, puuid , summoners_rank):
     real_solo_duo_rank = solo_duo_rank["queueType"] + " " + str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"]) + " " + str(solo_duo_rank["leaguePoints"])
     real_flex_rank = flex_rank["queueType"] + " " + str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"])
 
-    print("Rank in Solo/Duo: " + str(real_solo_duo_rank))
-    print("Rank in Flex: " + str(real_flex_rank))
+    # print("Rank in Solo/Duo: " + str(real_solo_duo_rank))
+    # print("Rank in Flex: " + str(real_flex_rank))
+
+    return real_flex_rank, real_solo_duo_rank, summoners_name, summoners_level, puuid
 
 #------------------- GET CHAMPIONS INFO BY PUUID WITHOUT INPUT ------------------##
 
@@ -77,23 +80,28 @@ def get_champions_info_by_puuid_without_input(puuid):
 
 #------------------- GET PUUID ------------------##
 
+
+
 def get_puuid():
-    while True:
-        name = input("Enter your summoner name: ")
-        hash_tag = input("Enter your hash tag: ")
-        puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{hash_tag}?api_key={API_KEY}"
+    
+    name, ok = QInputDialog.getText(None, "Summoner Name", "Enter Summoners name")
 
-        response = requests.get(puuid_url_finder)
+    if not ok or not name:
+        return None
 
-        if response.status_code != 200:
-            print("Error:", response.json()["status"]["status_code"])
-            print("Invalid name/tag")
-            continue
+    tag, ok = QInputDialog.getText(None, "Summoner Name", "Enter Summoners Hashtag name")
 
-        elif response.status_code == 200:
-            data = response.json()
-            return data["puuid"]
-        elif response.status_code == 404:
-            print("Error:", response.json()["status"]["status_code"])
-            print("Invalid name/tag")
-            continue
+    if not ok or not tag:
+        return None
+    
+    puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}"
+
+    response = requests.get(puuid_url_finder)
+
+    if response.status_code == 200:
+        data = response.json()
+        return data["puuid"]
+    else:
+        QMessageBox.critical(None, "Error", "Ses invalida stejne jako to jmeno")
+        return None
+    

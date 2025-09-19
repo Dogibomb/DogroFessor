@@ -7,16 +7,35 @@ from match_history import get_user_normal_match_history, get_user_ranked_match_h
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog
+
+class SummonerInfoDialog(QDialog):
+    def __init__(self, summoners_icon, summoners_level, real_flex_rank, real_solo_duo_rank, puuid, summoner_name, summoner_tag):
+        super().__init__()
+        self.setWindowTitle("Summoner Info")
+        self.setStyleSheet("background-color: black; color: white; font-size: 20px;")
+
+        layout = QVBoxLayout()
+
+        layout.addWidget(QLabel(f"Summoners Name: {summoner_name}"))
+        layout.addWidget(QLabel(f"Summoner Tag: {summoner_tag}"))
+        layout.addWidget(QLabel(f"Summoners Icon: {summoners_icon}"))
+        layout.addWidget(QLabel(f"Level: {summoners_level}"))
+        layout.addWidget(QLabel(f"Flex rank: {real_flex_rank}"))
+        layout.addWidget(QLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
+        layout.addWidget(QLabel(f"PUUID: <span style='color: gray'>{puuid}</span>"))
+
+        self.setLayout(layout)
+
 
 def summoner_info():
     puuid = get_puuid()
-    summoners_name, summoners_level, summoners_rank = get_summoners_level(puuid)
-    text = f"Name: {summoners_name} Level:{summoners_level} Rank:{summoners_rank}"
+    summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
+    summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
+    real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
 
-    msg = QMessageBox()
-    msg.setWindowTitle("Summoners info")
-    msg.setText(text)
-    msg.exec_()
+    dialog = SummonerInfoDialog(summoners_icon, summoners_level, real_flex_rank, real_solo_duo_rank, puuid, summoner_name, summoner_tag)
+    dialog.exec_()
 
 def clash_info():
     pass
