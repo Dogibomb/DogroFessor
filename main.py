@@ -7,7 +7,6 @@ from freechamps import get_champions_info, get_free_champions
 
 def get_user_normal_match_history():
     puuid = get_puuid()
-    
     api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=5"
     
     response_normal = requests.get(api_url_normal_matches + '&api_key=' + API_KEY)
@@ -31,6 +30,8 @@ def get_user_ranked_match_history():
         return None
     
     ranked_matches = response_ranked.json()
+    
+    return ranked_matches
 
 def convert_match_ids(match_ids):
     matchlist = []
@@ -68,9 +69,11 @@ def convert_match_ids(match_ids):
                 player_cache[puuid] = (name, tag)
 
             summoners_name, summoners_level, rank = get_summoners_level(p["puuid"])
+            soloq = next((r for r in rank if r['queueType'] == 'RANKED_SOLO_5x5'), None)
+
             champ = p["championName"]
             kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
-            print(f"    {name} - {rank[0]['tier']} {rank[0]['rank']} - {champ} | KDA: {kda}")
+            print(f"    {name} - {soloq['tier']} {soloq['rank']} - {champ} | KDA: {kda}")
             time.sleep(0.2)
             count += 1
 
@@ -103,7 +106,13 @@ while(True):
     elif user_input == "2":
         clash_info()
     elif user_input == "3":
-        convert_match_ids(get_user_normal_match_history())
+        print("For Normal matches press 1")
+        print("For Ranked matches press 2")
+        user_input2 = input("Enter your choice: ")
+        if user_input2 == "1":
+            convert_match_ids(get_user_normal_match_history())
+        elif user_input2 == "2":
+            convert_match_ids(get_user_ranked_match_history())
     elif user_input == "4":
         get_free_champions()
     elif user_input == "5":
