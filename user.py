@@ -35,11 +35,11 @@ def get_summoners_level(puuid):
         print("Error:", response_rank.json()["status"]["status_code"])
         return None
 
-    summoners_name = str(response_level.json()['profileIconId'])
+    summoners_icon = str(response_level.json()['profileIconId'])
     summoners_level = str(response_level.json()['summonerLevel'])
     summoners_rank = response_rank.json()
 
-    return summoners_name, summoners_level, summoners_rank
+    return summoners_icon, summoners_level, summoners_rank
 
 ##------------------- PRINT USER INFO ------------------##
 

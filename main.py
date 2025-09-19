@@ -8,7 +8,7 @@ from freechamps import get_champions_info, get_free_champions
 def get_user_normal_match_history():
     puuid = get_puuid()
     
-    api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=10"
+    api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=5"
     
     response_normal = requests.get(api_url_normal_matches + '&api_key=' + API_KEY)
 
@@ -45,7 +45,9 @@ def convert_match_ids(match_ids):
         return None
 
     count = 0
+    player_cache = {}
     for i, match in enumerate(matchlist, start=1):
+        count = 0
         time.sleep(0.2)
         print(f"\nMatch {i}:")
         duration = match["info"]["gameDuration"]
@@ -54,12 +56,21 @@ def convert_match_ids(match_ids):
 
         for p in match["info"]["participants"]:
             if count == 5:
-                print("\t----")
                 count = 0
-            name = get_champions_info_by_puuid_without_input(p["puuid"])
+                print("\t-----------------------------------")
+
+            puuid = p["puuid"]
+
+            if puuid in player_cache:
+                name, tag = player_cache[puuid]
+            else:    
+                name, tag = get_champions_info_by_puuid_without_input(p["puuid"])
+                player_cache[puuid] = (name, tag)
+
+            summoners_name, summoners_level, rank = get_summoners_level(p["puuid"])
             champ = p["championName"]
             kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
-            print(f"    {name} on {champ} | KDA: {kda}")
+            print(f"    {name} - {rank[0]['tier']} {rank[0]['rank']} - {champ} | KDA: {kda}")
             time.sleep(0.2)
             count += 1
 
