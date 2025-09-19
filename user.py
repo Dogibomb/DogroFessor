@@ -69,8 +69,9 @@ def get_champions_info_by_puuid_without_input(puuid):
         print("Invalid puuid")
         return None
 
-    summoners_name = str(response.json()['gameName'])
-    summoners_tag = str(response.json()['tagLine'])
+    data = response.json()
+    summoners_name = data.get('gameName')
+    summoners_tag = data.get('tagLine')
 
     return summoners_name, summoners_tag
 

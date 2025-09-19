@@ -1,3 +1,4 @@
+import time
 from api_key import API_KEY
 import requests
 from clash import clash_info
@@ -43,21 +44,24 @@ def convert_match_ids(match_ids):
         print("Error:", response.json()["status"]["status_code"])
         return None
 
-    
-    #participants, gameDuration
     count = 0
-    for i, match in enumerate(matchlist, start=0):
-        print(f"Match {i+1}:")
-        players = match["metadata"]["participants"]
-        print("Players in the match:")
-        for player in players:
-            summoners_info = get_champions_info_by_puuid_without_input(player)
-            summoners_rank = get_summoners_level(player)
-            
-            solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
+    for i, match in enumerate(matchlist, start=1):
+        time.sleep(0.2)
+        print(f"\nMatch {i}:")
+        duration = match["info"]["gameDuration"]
+        print(f"  Duration: {round(duration/60)} minutes")
+        print("  Players:")
 
-            print(f"- {summoners_info[0]}#{summoners_info[1]} | Rank: {solo_duo_rank["tier"]} {solo_duo_rank["rank"]}")
-            count = 0
+        for p in match["info"]["participants"]:
+            if count == 5:
+                print("\t----")
+                count = 0
+            name = get_champions_info_by_puuid_without_input(p["puuid"])
+            champ = p["championName"]
+            kda = f"{p['kills']}/{p['deaths']}/{p['assists']}"
+            print(f"    {name} on {champ} | KDA: {kda}")
+            time.sleep(0.2)
+            count += 1
 
 
 user_input = ''
