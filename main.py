@@ -1,10 +1,75 @@
-import time
 from api_key import API_KEY
-import requests
 from clash import clash_info
 from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
+
+import sys                
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QMessageBox
+from PyQt5.QtCore import Qt
+
+def summoner_info():
+    puuid = get_puuid()
+    summoners_name, summoners_level, summoners_rank = get_summoners_level(puuid)
+    text = f"Name: {summoners_name} Level:{summoners_level} Rank:{summoners_rank}"
+
+    msg = QMessageBox()
+    msg.setWindowTitle("Summoners info")
+    msg.setText(text)
+    msg.exec_()
+
+def clash_info():
+    pass
+def match_history():
+    pass
+def free_champions():
+    pass
+def convert_puuid():
+    pass
+def exit():
+    sys.exit()
+
+app = QApplication(sys.argv)
+window = QWidget()
+window.setWindowTitle('DogoPedia')
+window.setGeometry(400, 150, 1200, 700)
+
+layout = QVBoxLayout()
+
+welcome_label = QLabel('Welcome to DogoPedia', window)
+welcome_label.setWordWrap(True)
+layout.addWidget(welcome_label)
+
+# Create buttons
+btn_summoner_info = QPushButton('Summoner Info', window)
+btn_summoner_info.clicked.connect(summoner_info)
+layout.addWidget(btn_summoner_info)
+
+btn_match_history = QPushButton('Match History', window)
+btn_match_history.clicked.connect(match_history)
+layout.addWidget(btn_match_history)
+
+btn_clash_info = QPushButton('Clash Info', window)
+btn_clash_info.clicked.connect(clash_info)
+layout.addWidget(btn_clash_info)
+
+btn_free_champions = QPushButton('Free Champions', window)
+btn_free_champions.clicked.connect(free_champions)
+layout.addWidget(btn_free_champions)
+
+btn_convert_puuid = QPushButton('Convert PUUID', window)
+btn_convert_puuid.clicked.connect(convert_puuid)
+layout.addWidget(btn_convert_puuid)
+
+btn_exit = QPushButton('Exit', window)
+btn_exit.clicked.connect(exit)
+layout.addWidget(btn_exit)
+
+window.setLayout(layout)
+window.show()
+sys.exit(app.exec_())
+
+
 
 user_input = ''
 
@@ -12,13 +77,7 @@ while(True):
     
     print("\n-------------------------------")
 
-    print("DogoPedia - League of Legends API")
-    print("For Summoner info press 1")
-    print("For Clash info press 2")
-    print("For User Match History press 3")
-    print("For Free Champion info press 4")
-    print("For Convert puuid to name press 5")
-    print("To exit press x")
+    
 
     print("-------------------------------\n")
 
