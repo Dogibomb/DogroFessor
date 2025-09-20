@@ -8,7 +8,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtGui import QPixmap, QIcon
 
 class SummonerInfoDialog(QDialog):
     def __init__(self, summoners_icon, summoners_level, real_flex_rank, real_solo_duo_rank, puuid, summoner_name, summoner_tag):
@@ -184,6 +184,8 @@ class MainWindow(QWidget):
 
 
 app = QApplication(sys.argv)
+icon = QIcon("logo.png")
+app.setWindowIcon(icon)
 window = MainWindow()
 window.setWindowFlag(Qt.FramelessWindowHint)
 window.show()
