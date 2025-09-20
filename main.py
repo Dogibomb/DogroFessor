@@ -31,6 +31,7 @@ class SummonerInfoDialog(QDialog):
         self.setLayout(layout)
 
 
+
 def summoner_info():
     puuid = get_puuid()
     summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
@@ -48,98 +49,143 @@ def free_champions():
     pass
 def convert_puuid():
     pass
-def exit():
-    sys.exit()
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle('DogroFessor')
+        
+        self.setFixedSize(1400, 800)
+
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2D3848;
+                color: white;
+                font-size: 18px;
+            }
+
+            QPushButton {
+                background-color: #3A4556;
+                color: white;
+                font-size: 20px;
+                border-radius: 6px;
+                padding: 6px 12px;
+            }
+
+            QPushButton:hover {
+                background-color: #4A5568;
+            }
+
+            QPushButton#exitButton {
+                background-color: #AA2E2E;
+                border-radius: 4px;
+                width: 30px;
+            }
+
+            QLineEdit {
+                background-color: #3A4556;
+                color: white;
+                font-size: 20px;
+                padding: 6px;
+                border-radius: 4px;
+            }
+        """)
+
+        top_bar = QHBoxLayout()
+        logo = QLabel()
+        pixmap = QPixmap("logo.png")
+        # pixmap = pixmap.scaled(220,100)
+        pixmap = pixmap.scaled(220, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logo.setPixmap(pixmap)
+
+        btn_profile = QPushButton("Profil")
+        btn_profile.setFixedWidth(150)
+
+        btn_free_champions = QPushButton("Free champs")
+        btn_free_champions.setFixedWidth(150)
+
+        btn_convert_puuid = QPushButton("Convert Puuid")
+        btn_convert_puuid.setFixedWidth(150)
+
+        btn_clash_info = QPushButton("Clash Info")
+        btn_clash_info.setFixedWidth(150)
+
+        btn_exit = QPushButton("X")
+        btn_exit.setFixedWidth(50)
+        btn_exit.clicked.connect(self.close)
+
+        btn_minimized = QPushButton("_")
+        btn_minimized.setFixedWidth(50)
+        btn_minimized.clicked.connect(self.showMinimized)
+
+        btn_maximaze = QPushButton("▭")
+        btn_maximaze.setFixedWidth(50)
+        btn_maximaze.clicked.connect(self.toggleMaximaze)
+
+        search_box = QLineEdit()
+        search_box.setPlaceholderText("Search ...")
+        search_box.setFixedWidth(200)
+
+
+
+        top_bar.addWidget(logo)
+        top_bar.addStretch()
+        top_bar.addWidget(btn_profile)
+        top_bar.addWidget(btn_free_champions)
+        top_bar.addWidget(btn_convert_puuid)
+        top_bar.addWidget(btn_clash_info)
+        top_bar.addStretch()
+        top_bar.addWidget(search_box)
+        top_bar.addWidget(btn_minimized)
+        top_bar.addWidget(btn_maximaze)
+        top_bar.addWidget(btn_exit)
+
+
+
+        center_layout = QVBoxLayout()
+        # btn_match_history = QPushButton("Match history")
+        # btn_match_history.setFixedWidth(200)
+
+        # center_layout.addWidget(btn_match_history, alignment=Qt.AlignCenter)
+
+
+
+
+
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(top_bar)
+        main_layout.addStretch()
+        main_layout.addLayout(center_layout)
+
+
+        self.setLayout(main_layout)
+
+    def toggleMaximaze(self):
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
+            
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragPos = event.globalPos()
+
+    def mouseMoveEvent(self, event):
+        if event.buttons() == Qt.LeftButton:
+            self.move(self.pos() + event.globalPos() - self.dragPos)
+            self.dragPos = event.globalPos()
+
+
+
+
+
+
+
+
 
 app = QApplication(sys.argv)
-window = QWidget()
-window.setWindowTitle('DogroFessor')
-window.setGeometry(400, 150, 1200, 700)
-# window.setWindowIcon("logo.jpg")
-
-window.setStyleSheet("background-color: #2D3848;")
-
-
-
-top_bar = QHBoxLayout()
-logo = QLabel()
-pixmap = QPixmap("logo.jpeg")
-pixmap = pixmap.scaled(200,50)
-logo.setPixmap(pixmap)
-
-btn_profile = QPushButton("Profil")
-
-btn_free_champions = QPushButton("Free champs")
-btn_free_champions.setFixedWidth(150)
-
-search_box = QLineEdit()
-search_box.setPlaceholderText("Search ...")
-search_box.setFixedWidth(200)
-
-top_bar.addWidget(logo)
-top_bar.addStretch()
-top_bar.addWidget(btn_profile)
-top_bar.addWidget(btn_free_champions)
-top_bar.addStretch()
-top_bar.addWidget(search_box)
-
-
-
-center_layout = QVBoxLayout()
-welcome_label = QLabel('Welcome to DogroFessor', window)
-btn_match_history = QPushButton("Match history")
-btn_match_history.setFixedWidth(200)
-
-center_layout.addWidget(welcome_label, alignment=Qt.AlignCenter)
-center_layout.addWidget(btn_match_history, alignment=Qt.AlignCenter)
-
-
-bottom_bar = QHBoxLayout()
-btn_convert_puuid = QPushButton("Convert Puuid")
-btn_convert_puuid.setFixedWidth(150)
-btn_exit = QPushButton("Exit")
-btn_exit.setFixedWidth(50)
-btn_clash_info = QPushButton("Clash Info")
-btn_clash_info.setFixedWidth(120)
-
-bottom_bar.addStretch()
-bottom_bar.addWidget(btn_convert_puuid)
-bottom_bar.addWidget(btn_exit)
-bottom_bar.addWidget(btn_clash_info)
-bottom_bar.addStretch()
-
-
-
-main_layout = QVBoxLayout()
-main_layout.addLayout(top_bar)
-main_layout.addStretch()
-main_layout.addLayout(center_layout)
-main_layout.addStretch()
-main_layout.addLayout(bottom_bar)
-
-
-# search_box.clicked.connect(summoner_info)
-btn_match_history.clicked.connect(match_history)
-btn_clash_info.clicked.connect(clash_info)
-btn_free_champions.clicked.connect(free_champions)
-btn_convert_puuid.clicked.connect(convert_puuid)
-btn_exit.clicked.connect(exit)
-
-
-
-btn_match_history.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-btn_clash_info.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-btn_free_champions.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-btn_convert_puuid.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-btn_exit.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-btn_profile.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-
-search_box.setStyleSheet("background-color: #3A4556; color: white; font-size: 20px;")
-welcome_label.setStyleSheet("color: white; font-size: 60px; ")
-
-
-
-window.setLayout(main_layout)
+window = MainWindow()
+window.setWindowFlag(Qt.FramelessWindowHint)
 window.show()
 sys.exit(app.exec_())
 
