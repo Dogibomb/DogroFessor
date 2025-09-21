@@ -94,15 +94,34 @@ class MainWindow(QWidget):
             iconLabel{
                 border: 1px solid black;
                 border-radius: 200px;
-           }    
+           }
+            #topBar{
+                background-color: #252c38; 
+                
+            }
+            #logo{
+            background-color: #252c38;
+            margin: 0px;
+            }        
         """)
 
-        top_bar = QHBoxLayout()
-        logo = QLabel()
+        top_bar_widget = QWidget()
+        top_bar_widget.setObjectName("topBar")
+        top_bar = QHBoxLayout(top_bar_widget)
+        top_bar.setContentsMargins(10, 10, 10, 10)
+        top_bar_widget.setFixedHeight(70)
+        
+        logo = QLabel(top_bar_widget)
         pixmap = QPixmap("logo.png")
-        # pixmap = pixmap.scaled(220,100)
-        pixmap = pixmap.scaled(220, 100, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         logo.setPixmap(pixmap)
+        logo.setObjectName("logo")
+        logo.setFixedSize(pixmap.size())
+        logo.setContentsMargins(0, 0, 0, 0)
+        logo.move(40, -5)
+
+        
+        
 
         btn_profile = QPushButton("Profil")
         btn_profile.setFixedWidth(150)
@@ -133,8 +152,9 @@ class MainWindow(QWidget):
         self.search_box.setFixedWidth(200)
         self.search_box.returnPressed.connect(self.summoner_info)
 
-
-        top_bar.addWidget(logo)
+        
+        # top_bar.addWidget(logo)
+        top_bar.addStretch()
         top_bar.addStretch()
         top_bar.addWidget(btn_profile)
         top_bar.addWidget(btn_free_champions)
@@ -153,14 +173,15 @@ class MainWindow(QWidget):
 
 
 
-
-
+    
+        
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_bar)
+        
+        main_layout.addWidget(top_bar_widget)
         main_layout.addStretch()
         main_layout.addLayout(self.center_layout)
         main_layout.addStretch()
-
+        main_layout.setContentsMargins(0, 0, 0, 0)
 
         self.setLayout(main_layout)
 
