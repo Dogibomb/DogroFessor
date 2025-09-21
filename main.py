@@ -1,11 +1,11 @@
 from api_key import API_KEY
 from clash import clash_info
-from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid
+from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid, get_icon
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon
@@ -15,6 +15,7 @@ class InfoLabel(QLabel):
         super().__init__(text)
         self.setObjectName("summonerInfoTab")
         self.setAlignment(Qt.AlignCenter)
+        self.setFixedWidth(700)
         
 
 def clash_info():
@@ -73,10 +74,7 @@ class MainWindow(QWidget):
                 border-radius: 4px;   
                 
             }
-            #puuidLabel{
-                margin-top: 10px;
-                font-size: 16px;           
-            }
+
         """)
 
         top_bar = QHBoxLayout()
@@ -149,26 +147,32 @@ class MainWindow(QWidget):
 
 
     def summoner_info(self):
-        query = self.search_box.text().strip()
-        if "#" not in query:
-            return
         
-        summoner_name, summoner_tag = query.split("#")
+        text = self.search_box.text().strip()
 
-        puuid = get_puuid()
-        
+        if "#" not in text:
+            QMessageBox.warning(self, "Warning", "You have to enter valid tag in format Name#Tag")
+            return
+
+        name, tag = text.split("#", 1)
+
+        puuid = get_puuid(name, tag)
+
         summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
         real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
 
-        puuid_label = InfoLabel(f"PUUID: {puuid}")
-        puuid_label.setObjectName("puuidLabel")
+        pixmap = get_icon(summoners_icon)
+        if pixmap:
+            icon_label = QLabel()
+            icon_label.setPixmap(pixmap)
+            self.center_layout.addWidget(icon_label)
 
         self.center_layout.addWidget(InfoLabel(f"Summoner: {summoner_name}#{summoner_tag}"))
         self.center_layout.addWidget(InfoLabel(f"Level: {summoners_level}"))
         self.center_layout.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"))
         self.center_layout.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
-        self.center_layout.addWidget(puuid_label)
+        
 
     def toggleMaximaze(self):
         if self.isMaximized():
