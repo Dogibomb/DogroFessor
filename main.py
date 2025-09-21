@@ -5,41 +5,17 @@ from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon
 
-class SummonerInfoDialog(QDialog):
-    def __init__(self, summoners_icon, summoners_level, real_flex_rank, real_solo_duo_rank, puuid, summoner_name, summoner_tag):
-        super().__init__()
-        self.setWindowTitle("Summoner Info")
-        self.setStyleSheet("background-color: black; color: white; font-size: 20px;")
-
-        layout = QVBoxLayout()
-
-        layout.addWidget(QLabel(f"Summoners Name: {summoner_name}"))
-        layout.addWidget(QLabel(f"Summoner Tag: {summoner_tag}"))
-        layout.addWidget(QLabel(f"Summoners Icon: {summoners_icon}"))
-        layout.addWidget(QLabel(f"Level: {summoners_level}"))
-        layout.addWidget(QLabel(f"Flex rank: {real_flex_rank}"))
-        layout.addWidget(QLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
-        layout.addWidget(QLabel(f"PUUID: <span style='color: gray'>{puuid}</span>"))
-
+class InfoLabel(QLabel):
+    def __init__(self, text):
+        super().__init__(text)
+        self.setObjectName("summonerInfoTab")
+        self.setAlignment(Qt.AlignCenter)
         
-
-        self.setLayout(layout)
-
-
-
-def summoner_info():
-    puuid = get_puuid()
-    summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
-    summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
-    real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
-
-    dialog = SummonerInfoDialog(summoners_icon, summoners_level, real_flex_rank, real_solo_duo_rank, puuid, summoner_name, summoner_tag)
-    dialog.exec_()
 
 def clash_info():
     pass
@@ -89,6 +65,18 @@ class MainWindow(QWidget):
                 padding: 6px;
                 border-radius: 4px;
             }
+            InfoLabel{
+                background-color: #3A4556;
+                color: white;
+                font-size: 20px;
+                padding: 6px;
+                border-radius: 4px;   
+                
+            }
+            #puuidLabel{
+                margin-top: 10px;
+                font-size: 16px;           
+            }
         """)
 
         top_bar = QHBoxLayout()
@@ -122,10 +110,10 @@ class MainWindow(QWidget):
         btn_maximaze.setFixedWidth(50)
         btn_maximaze.clicked.connect(self.toggleMaximaze)
 
-        search_box = QLineEdit()
-        search_box.setPlaceholderText("Search ...")
-        search_box.setFixedWidth(200)
-
+        self.search_box = QLineEdit()
+        self.search_box.setPlaceholderText("e.g Dogbomb#luv")
+        self.search_box.setFixedWidth(200)
+        self.search_box.returnPressed.connect(self.summoner_info)
 
 
         top_bar.addWidget(logo)
@@ -135,18 +123,15 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_convert_puuid)
         top_bar.addWidget(btn_clash_info)
         top_bar.addStretch()
-        top_bar.addWidget(search_box)
+        top_bar.addWidget(self.search_box)
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
 
 
 
-        center_layout = QVBoxLayout()
-        # btn_match_history = QPushButton("Match history")
-        # btn_match_history.setFixedWidth(200)
-
-        # center_layout.addWidget(btn_match_history, alignment=Qt.AlignCenter)
+        self.center_layout = QVBoxLayout()
+        
 
 
 
@@ -155,10 +140,35 @@ class MainWindow(QWidget):
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_bar)
         main_layout.addStretch()
-        main_layout.addLayout(center_layout)
+        main_layout.addLayout(self.center_layout)
+        main_layout.addStretch()
 
 
         self.setLayout(main_layout)
+
+
+
+    def summoner_info(self):
+        query = self.search_box.text().strip()
+        if "#" not in query:
+            return
+        
+        summoner_name, summoner_tag = query.split("#")
+
+        puuid = get_puuid()
+        
+        summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
+        summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
+        real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
+
+        puuid_label = InfoLabel(f"PUUID: {puuid}")
+        puuid_label.setObjectName("puuidLabel")
+
+        self.center_layout.addWidget(InfoLabel(f"Summoner: {summoner_name}#{summoner_tag}"))
+        self.center_layout.addWidget(InfoLabel(f"Level: {summoners_level}"))
+        self.center_layout.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"))
+        self.center_layout.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
+        self.center_layout.addWidget(puuid_label)
 
     def toggleMaximaze(self):
         if self.isMaximized():
@@ -175,9 +185,7 @@ class MainWindow(QWidget):
             self.move(self.pos() + event.globalPos() - self.dragPos)
             self.dragPos = event.globalPos()
 
-
-
-
+        
 
 
 
