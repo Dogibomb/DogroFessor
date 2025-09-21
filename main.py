@@ -9,14 +9,32 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLay
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QPainter, QBrush, QPainterPath
 
 class InfoLabel(QLabel):
     def __init__(self, text):
         super().__init__(text)
         self.setObjectName("summonerInfoTab")
-        self.setAlignment(Qt.AlignCenter)
-        self.setFixedWidth(700)
-        
+        # self.setAlignment(Qt.AlignCenter)
+        self.setFixedWidth(500)
+
+def round_pixmap(pixmap):
+    size = min(pixmap.width(), pixmap.height())
+    rounded = QPixmap(size, size)
+    rounded.fill(Qt.transparent)
+
+    painter = QPainter(rounded)
+    painter.setRenderHint(QPainter.Antialiasing)
+    
+    path = QPainterPath()
+    path.addEllipse(0, 0, size, size)  # vytvoří kruh
+    painter.setClipPath(path)
+    
+    # Nakreslí originální pixmapu do kruhu
+    painter.drawPixmap(0, 0, size, size, pixmap)
+    painter.end()
+    
+    return rounded        
 
 def clash_info():
     pass
@@ -72,9 +90,11 @@ class MainWindow(QWidget):
                 font-size: 20px;
                 padding: 6px;
                 border-radius: 4px;   
-                
             }
-
+            iconLabel{
+                border: 1px solid black;
+                border-radius: 200px;
+           }    
         """)
 
         top_bar = QHBoxLayout()
@@ -157,19 +177,23 @@ class MainWindow(QWidget):
         name, tag = text.split("#", 1)
 
         puuid = get_puuid(name, tag)
+        if puuid is None:
+            return
 
         summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
         real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
 
         pixmap = get_icon(summoners_icon)
+        
         if pixmap:
+            pixmap = pixmap.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = round_pixmap(pixmap)
             icon_label = QLabel()
             icon_label.setPixmap(pixmap)
+            icon_label.setObjectName("iconLabel")
             self.center_layout.addWidget(icon_label)
-
-        self.center_layout.addWidget(InfoLabel(f"Summoner: {summoner_name}#{summoner_tag}"))
-        self.center_layout.addWidget(InfoLabel(f"Level: {summoners_level}"))
+        self.center_layout.addWidget(InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}"))
         self.center_layout.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"))
         self.center_layout.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
         
@@ -188,6 +212,8 @@ class MainWindow(QWidget):
         if event.buttons() == Qt.LeftButton:
             self.move(self.pos() + event.globalPos() - self.dragPos)
             self.dragPos = event.globalPos()
+    
+
 
         
 

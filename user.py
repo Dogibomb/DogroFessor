@@ -83,15 +83,24 @@ def get_champions_info_by_puuid_without_input(puuid):
 def get_puuid(name, tag):
     
     puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}"
-
+    
     response = requests.get(puuid_url_finder)
-
+    
     if response.status_code == 200:
         data = response.json()
         return data["puuid"]
     else:
-        QMessageBox.critical(None, "Error", "Ses invalida stejne jako to jmeno")
+        msg = QMessageBox()
+        msg.setText("Ses invalida stejne jako to jmeno")
+        msg.setStyleSheet("""
+            background-color: #2D3848;
+            color: white;
+            font-size: 18px;
+        """)
+        msg.exec_()
         return None
+    
+    
     
 def get_icon(icon):
     url = f"https://ddragon.leagueoflegends.com/cdn/15.18.1/img/profileicon/{icon}.png"
