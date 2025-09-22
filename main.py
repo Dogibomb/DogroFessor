@@ -92,7 +92,7 @@ class MainWindow(QWidget):
                 border-radius: 4px;
             }
             InfoLabel{
-                background-color: #3A4556;
+                background-color: #2C313C;
                 color: white;
                 font-size: 20px;
                 padding: 6px;
@@ -242,14 +242,26 @@ class MainWindow(QWidget):
         winrate = 20
 
         if pixmap:
-            pixmap = pixmap.scaled(96, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             pixmap = round_pixmap(pixmap)
             icon_label = QLabel()
             icon_label.setPixmap(pixmap)
             icon_label.setObjectName("iconLabel")
             self.middle_column.addWidget(icon_label, alignment=Qt.AlignCenter)
-        self.middle_column.addWidget(InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level} / Winrate {winrate}%"), alignment=Qt.AlignHCenter)
-        
+        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level} / Winrate {winrate}%")
+        text_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
+
+        # vytvoříme widget pro řádek
+        info_widget = QWidget()
+        info_row = QHBoxLayout()
+        info_widget.setLayout(info_row)
+
+        # přidáme ikonku a text do layoutu
+        info_row.addWidget(icon_label)
+        info_row.addWidget(text_label)
+
+        # přidáme celý widget do middle_column
+        self.middle_column.addWidget(info_widget, alignment=Qt.AlignCenter)
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"), alignment=Qt.AlignTop | Qt.AlignRight)
         
@@ -261,6 +273,7 @@ class MainWindow(QWidget):
         pixmapsolo = pixmapsolo.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         logosolo.setPixmap(pixmapsolo)
         logosolo.setObjectName("logoRank")
+        logosolo.setAlignment(Qt.AlignCenter)
 
         self.left_column.addWidget(logosolo)
 
@@ -269,7 +282,7 @@ class MainWindow(QWidget):
         pixmapflex = pixmapflex.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         logoflex.setPixmap(pixmapflex)
         logoflex.setObjectName("logoRank")
-        
+        logoflex.setAlignment(Qt.AlignCenter)
         self.right_column.addWidget(logoflex)
         
 

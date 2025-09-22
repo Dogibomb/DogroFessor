@@ -49,10 +49,15 @@ def get_summoners_level(puuid):
 def print_user_info(summoners_name, summoners_level, puuid , summoners_rank):
     solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
     flex_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
-
-    real_solo_duo_rank = str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"]) + " " + str(solo_duo_rank["leaguePoints"]) + " LP"
-    real_flex_rank = str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"]) + " LP"
-
+    try:
+        real_solo_duo_rank = str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"]) + " " + str(solo_duo_rank["leaguePoints"]) + " LP"
+    except:
+        real_solo_duo_rank = "None rank"
+    
+    try:
+        real_flex_rank = str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"]) + " LP"
+    except:
+        real_flex_rank = "None rank"
     # print("Rank in Solo/Duo: " + str(real_solo_duo_rank))
     # print("Rank in Flex: " + str(real_flex_rank))
 
