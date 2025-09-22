@@ -110,4 +110,28 @@ def get_icon(icon):
         pixmap.loadFromData(response.content)
         return pixmap
     return None
+
+def check_what_rank(rank):
     
+    rank = rank.lower()
+
+    if "iron" in rank:
+        return "iron.png"
+    if "bronze" in rank:
+        return "bronze.png"
+    if "silver" in rank:
+        return "silver.png"
+    if "gold" in rank:
+        return "gold.png"
+    if "platinum" in rank:
+        return "platinum.png"
+    if "emerald" in rank:
+        return "emerald.png"
+    if "diamond" in rank:
+        return "diamond.png"
+    if "master" in rank and "grand" not in rank:
+        return "master.png"
+    if "grandmaster" in rank:
+        return "grandmaster.png"
+    if "challenger" in rank:
+        return "challenger.png"

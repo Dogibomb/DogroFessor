@@ -1,6 +1,6 @@
 from api_key import API_KEY
 from clash import clash_info
-from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid, get_icon
+from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
@@ -15,8 +15,9 @@ class InfoLabel(QLabel):
     def __init__(self, text):
         super().__init__(text)
         self.setObjectName("summonerInfoTab")
-        # self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignCenter)
         self.setFixedWidth(500)
+        
 
 def round_pixmap(pixmap):
     size = min(pixmap.width(), pixmap.height())
@@ -36,6 +37,7 @@ def round_pixmap(pixmap):
     
     return rounded        
 
+
 def clash_info():
     pass
 def match_history():
@@ -50,7 +52,7 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle('DogroFessor')
         
-        self.setFixedSize(1400, 800)
+        self.setFixedSize(1500, 800)
 
         self.setStyleSheet("""
             QWidget {
@@ -183,23 +185,33 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_exit)
 
         
+        self.right_column = QVBoxLayout()
+        
+
+        self.middle_column = QVBoxLayout()
+        self.middle_column.setAlignment(Qt.AlignTop)
+        
+
+        self.left_column = QVBoxLayout()
+        
 
 
         self.center_layout = QHBoxLayout()
+        self.center_layout.addLayout(self.right_column, stretch=1)
+        self.center_layout.addLayout(self.middle_column, stretch=1)
+        self.center_layout.addLayout(self.left_column, stretch=1)
+        self.center_layout.setAlignment(Qt.AlignTop)
+        # self.center_layout.setContentsMargins(12, 12, 12, 12)
+        # self.center_layout.setSpacing(40)
 
-        
-
-
-
-    
-        
         main_layout = QVBoxLayout()
         
         main_layout.addWidget(top_bar_widget)
-        main_layout.addStretch()
+        
         main_layout.addLayout(self.center_layout)
         main_layout.addStretch()
         main_layout.setContentsMargins(0, 0, 0, 0)
+        # main_layout.setSpacing(0)
 
         self.setLayout(main_layout)
 
@@ -223,18 +235,42 @@ class MainWindow(QWidget):
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
         real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
 
+        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"), alignment=Qt.AlignTop | Qt.AlignLeft)
+
         pixmap = get_icon(summoners_icon)
         
+        winrate = 20
+
         if pixmap:
-            pixmap = pixmap.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            pixmap = pixmap.scaled(96, 96, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             pixmap = round_pixmap(pixmap)
             icon_label = QLabel()
             icon_label.setPixmap(pixmap)
             icon_label.setObjectName("iconLabel")
-            self.center_layout.addWidget(icon_label)
-        self.center_layout.addWidget(InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}"))
-        self.center_layout.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"))
-        self.center_layout.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"))
+            self.middle_column.addWidget(icon_label, alignment=Qt.AlignCenter)
+        self.middle_column.addWidget(InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level} / Winrate {winrate}%"), alignment=Qt.AlignHCenter)
+        
+
+        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"), alignment=Qt.AlignTop | Qt.AlignRight)
+        
+        rankIconsolo = check_what_rank(real_solo_duo_rank)
+        rankIconflex = check_what_rank(real_flex_rank)
+
+        logosolo = QLabel()
+        pixmapsolo = QPixmap(f"ranky/{rankIconsolo}")
+        pixmapsolo = pixmapsolo.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logosolo.setPixmap(pixmapsolo)
+        logosolo.setObjectName("logoRank")
+
+        self.left_column.addWidget(logosolo)
+
+        logoflex = QLabel()
+        pixmapflex = QPixmap(f"ranky/{rankIconflex}")
+        pixmapflex = pixmapflex.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        logoflex.setPixmap(pixmapflex)
+        logoflex.setObjectName("logoRank")
+        
+        self.right_column.addWidget(logoflex)
         
 
     def toggleMaximaze(self):
