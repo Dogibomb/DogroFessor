@@ -54,13 +54,13 @@ class MainWindow(QWidget):
 
         self.setStyleSheet("""
             QWidget {
-                background-color: #2D3848;
+                background-color: #20232A;
                 color: white;
                 font-size: 18px;
             }
 
             QPushButton {
-                background-color: #3A4556;
+                background-color: #A78BFA;
                 color: white;
                 font-size: 20px;
                 border-radius: 6px;
@@ -68,17 +68,22 @@ class MainWindow(QWidget):
             }
 
             QPushButton:hover {
-                background-color: #4A5568;
+                background-color: #8B5CF6;
+            }
+            
+            QPushButton:pressed{
+                background-color: #7C3AED
             }
 
             QPushButton#exitButton {
-                background-color: #AA2E2E;
+                background-color: #8B5CF6;
                 border-radius: 4px;
                 width: 30px;
             }
 
             QLineEdit {
-                background-color: #3A4556;
+                background-color: #2C313C;
+                border: 1px solid #A78BFA;
                 color: white;
                 font-size: 20px;
                 padding: 6px;
@@ -96,13 +101,16 @@ class MainWindow(QWidget):
                 border-radius: 200px;
            }
             #topBar{
-                background-color: #252c38; 
+                background-color: #2C313C; 
                 
             }
             #logo{
-            background-color: #252c38;
+            background-color: #2C313C;
             margin: 0px;
-            }        
+            }
+            #funcKeys{
+                font-size: 20px;
+            }          
         """)
 
         top_bar_widget = QWidget()
@@ -137,19 +145,26 @@ class MainWindow(QWidget):
 
         btn_exit = QPushButton("X")
         btn_exit.setFixedWidth(50)
+        btn_exit.setFixedHeight(30)
+        btn_exit.setObjectName("funcKeys")
         btn_exit.clicked.connect(self.close)
 
-        btn_minimized = QPushButton("_")
+        btn_minimized = QPushButton("–")
         btn_minimized.setFixedWidth(50)
+        btn_minimized.setFixedHeight(30)
+        btn_minimized.setObjectName("funcKeys")
         btn_minimized.clicked.connect(self.showMinimized)
 
         btn_maximaze = QPushButton("▭")
         btn_maximaze.setFixedWidth(50)
+        btn_maximaze.setFixedHeight(30)
+        btn_maximaze.setObjectName("funcKeys")
         btn_maximaze.clicked.connect(self.toggleMaximaze)
 
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("e.g Dogbomb#luv")
         self.search_box.setFixedWidth(200)
+        self.search_box.setContentsMargins(0,0,10,0)
         self.search_box.returnPressed.connect(self.summoner_info)
 
         
@@ -162,13 +177,16 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_clash_info)
         top_bar.addStretch()
         top_bar.addWidget(self.search_box)
+       
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
 
+        
 
 
-        self.center_layout = QVBoxLayout()
+        self.center_layout = QHBoxLayout()
+
         
 
 
