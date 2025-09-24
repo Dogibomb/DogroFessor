@@ -1,6 +1,6 @@
 from api_key import API_KEY
 from clash import clash_info
-from user import get_User_info_by_puuid, get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks
+from user import get_User_info_by_puuid, get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
@@ -109,9 +109,8 @@ class MainWindow(QWidget):
                 padding: 6px;
                 border-radius: 4px;   
             }
-            iconLabel{
-                border: 1px solid black;
-                border-radius: 200px;
+            #iconLabel{
+                background-color: transparent;
            }
             #topBar{
                 background-color: #2C313C;   
@@ -150,20 +149,21 @@ class MainWindow(QWidget):
 
         top_bar_widget = QWidget()
         top_bar_widget.setObjectName("topBar")
-        top_bar = QHBoxLayout(top_bar_widget)
-        top_bar.setContentsMargins(10, 10, 10, 10)
         top_bar_widget.setFixedHeight(70)
+        top_bar = QHBoxLayout(top_bar_widget)
+        top_bar.setSpacing(8)
+        top_bar.setContentsMargins(0, 0, 0, 0)
         
-        logo = QLabel(top_bar_widget)
-        pixmap = QPixmap("logo.png")
-        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        logo.setPixmap(pixmap)
-        logo.setObjectName("logo")
-        logo.setFixedSize(pixmap.size())
-        logo.setContentsMargins(0, 0, 0, 0)
+        logo = QLabel(top_bar_widget) 
+        pixmap = QPixmap("logo.png") 
+        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
+        logo.setPixmap(pixmap) 
+        logo.setObjectName("logo") 
+        logo.setFixedSize(pixmap.size()) 
+        logo.setContentsMargins(0, 0, 0, 0) 
         logo.move(40, -5)
 
-        
+
 
         btn_profile = QPushButton("Profil")
         btn_profile.setFixedWidth(150)
@@ -286,11 +286,13 @@ class MainWindow(QWidget):
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
         real_flex_rank, real_solo_duo_rank = get_real_ranks(summoners_rank)
 
-        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"), alignment=Qt.AlignTop | Qt.AlignLeft)
+        winrate = calculate_winrate(summoners_rank)
+
+        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank} / Winrate: {winrate[0]}%"), alignment=Qt.AlignTop | Qt.AlignLeft)
 
         pixmap = get_icon(summoners_icon)
         
-        winrate = 20 
+        
 
         if pixmap:
             pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -299,22 +301,23 @@ class MainWindow(QWidget):
             icon_label.setPixmap(pixmap)
             icon_label.setObjectName("iconLabel")
             self.middle_column.addWidget(icon_label, alignment=Qt.AlignCenter)
-        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level} / Winrate {winrate}%")
-        text_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-
+        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
+       
         # vytvoříme widget pro řádek
         info_widget = QWidget()
         info_row = QHBoxLayout()
         info_widget.setLayout(info_row)
 
         # přidáme ikonku a text do layoutu
-        info_row.addWidget(icon_label)
+        
+        
         info_row.addWidget(text_label)
+        info_row.addWidget(icon_label)
 
         # přidáme celý widget do middle_column
-        self.middle_column.addWidget(info_widget, alignment=Qt.AlignCenter)
+        self.middle_column.addWidget(info_widget)
 
-        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"), alignment=Qt.AlignTop | Qt.AlignRight)
+        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
         
         rankIconsolo = check_what_rank(real_solo_duo_rank)
         rankIconflex = check_what_rank(real_flex_rank)

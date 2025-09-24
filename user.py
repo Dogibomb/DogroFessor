@@ -64,7 +64,22 @@ def get_summoners_level(puuid, region):
 
     return summoners_icon, summoners_level, summoners_rank
 
-##------------------- PRINT USER INFO ------------------##
+def calculate_winrate(summoners_rank):
+    # summoners rank is a info about summoners too lazy to change that
+    ranked_info_solo = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
+    ranked_info_flex = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
+
+    wins_solo = ranked_info_solo["wins"]
+    losses_solo = ranked_info_solo["losses"]
+
+    winrate_solo = round((wins_solo / (wins_solo + losses_solo)) * 100)
+
+    wins_flex = ranked_info_flex["wins"]
+    losses_flex = ranked_info_flex["losses"]
+
+    winrate_flex = round((wins_flex / (wins_flex + losses_flex)) * 100)
+
+    return winrate_solo, winrate_flex
 
 def get_real_ranks(summoners_rank):
     solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
@@ -78,8 +93,6 @@ def get_real_ranks(summoners_rank):
         real_flex_rank = str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"]) + " LP"
     except:
         real_flex_rank = "None rank"
-    # print("Rank in Solo/Duo: " + str(real_solo_duo_rank))
-    # print("Rank in Flex: " + str(real_flex_rank))
 
     return real_flex_rank, real_solo_duo_rank
 
