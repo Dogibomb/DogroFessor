@@ -22,21 +22,41 @@ def get_User_info_by_puuid():
 
 ##------------------- GET SUMMONERS LEVEL ------------------##
 
-def get_summoners_level(puuid):
-    api_url1 = "https://eun1.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/" + puuid
+def get_summoners_level(puuid, region):
+    region = region.lower()
+    if region == "eune":
+        region = "eun1"
+    if region == "br":
+        region = "br1"
+    if region == "na":
+        region = "na1"
+    if region == "eune":
+        region = "eun1"
+    if region == "LAN":
+        region = "la1"
+    if region == "las":
+        region = "la2"
+    if region == "oce":
+        region = "oc1"
+    if region == "tr":
+        region = "tr1"
+    if region == "JP":
+        region = "jp1"
+
+    api_url1 = f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/" + puuid
     api_url1 = api_url1 + '?api_key=' + API_KEY
-    api_url2 = "https://eun1.api.riotgames.com/lol/league/v4/entries/by-puuid/" + puuid
+    api_url2 = f"https://{region}.api.riotgames.com/lol/league/v4/entries/by-puuid/" + puuid
     api_url2 = api_url2 + '?api_key=' + API_KEY
     response_rank = requests.get(api_url2)
     response_level = requests.get(api_url1)
 
     if response_level.status_code != 200:
         print("Error:", response_level.json()["status"]["status_code"])
-        return None
+        return "None"
 
     if response_rank.status_code != 200:
         print("Error:", response_rank.json()["status"]["status_code"])
-        return None
+        return "None"
 
     summoners_icon = str(response_level.json()['profileIconId'])
     summoners_level = str(response_level.json()['summonerLevel'])
@@ -46,7 +66,7 @@ def get_summoners_level(puuid):
 
 ##------------------- PRINT USER INFO ------------------##
 
-def print_user_info(summoners_name, summoners_level, puuid , summoners_rank):
+def get_real_ranks(summoners_rank):
     solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
     flex_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
     try:
@@ -61,7 +81,7 @@ def print_user_info(summoners_name, summoners_level, puuid , summoners_rank):
     # print("Rank in Solo/Duo: " + str(real_solo_duo_rank))
     # print("Rank in Flex: " + str(real_flex_rank))
 
-    return real_flex_rank, real_solo_duo_rank, summoners_name, summoners_level, puuid
+    return real_flex_rank, real_solo_duo_rank
 
 #------------------- GET CHAMPIONS INFO BY PUUID WITHOUT INPUT ------------------##
 

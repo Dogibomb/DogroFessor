@@ -1,14 +1,14 @@
 from api_key import API_KEY
 from clash import clash_info
-from user import get_User_info_by_puuid, get_summoners_level, print_user_info, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank
+from user import get_User_info_by_puuid, get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDialog
-from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtGui import QPixmap, QIcon, QColor
 from PyQt5.QtGui import QPixmap, QPainter, QBrush, QPainterPath
 
 class InfoLabel(QLabel):
@@ -18,6 +18,13 @@ class InfoLabel(QLabel):
         self.setAlignment(Qt.AlignCenter)
         self.setFixedWidth(500)
         
+def make_shadow():
+    shadow = QGraphicsDropShadowEffect()
+    shadow.setBlurRadius(15)       # jak moc je rozmazaný
+    shadow.setXOffset(2)           # posun X
+    shadow.setYOffset(2)           # posun Y
+    shadow.setColor(QColor(0, 0, 0, 180))  # barva stínu
+    return shadow
 
 def round_pixmap(pixmap):
     size = min(pixmap.width(), pixmap.height())
@@ -35,7 +42,8 @@ def round_pixmap(pixmap):
     painter.drawPixmap(0, 0, size, size, pixmap)
     painter.end()
     
-    return rounded        
+    return rounded    
+    
 
 
 def clash_info():
@@ -53,6 +61,8 @@ class MainWindow(QWidget):
         self.setWindowTitle('DogroFessor')
         
         self.setFixedSize(1500, 800)
+
+        self.dragPos = None
 
         self.setStyleSheet("""
             QWidget {
@@ -112,6 +122,10 @@ class MainWindow(QWidget):
             }
             #funcKeys{
                 font-size: 20px;
+            }
+            #RegionBox{
+                padding: 5px;
+                background-color: #2C313C         
             }          
         """)
 
@@ -131,37 +145,51 @@ class MainWindow(QWidget):
         logo.move(40, -5)
 
         
-        
 
         btn_profile = QPushButton("Profil")
         btn_profile.setFixedWidth(150)
+        btn_profile.setGraphicsEffect(make_shadow())
 
         btn_free_champions = QPushButton("Free champs")
         btn_free_champions.setFixedWidth(150)
+        btn_free_champions.setGraphicsEffect(make_shadow())
 
         btn_convert_puuid = QPushButton("Convert Puuid")
         btn_convert_puuid.setFixedWidth(150)
+        btn_convert_puuid.setGraphicsEffect(make_shadow())
 
         btn_clash_info = QPushButton("Clash Info")
         btn_clash_info.setFixedWidth(150)
+        btn_clash_info.setGraphicsEffect(make_shadow())
 
         btn_exit = QPushButton("X")
         btn_exit.setFixedWidth(50)
         btn_exit.setFixedHeight(30)
         btn_exit.setObjectName("funcKeys")
         btn_exit.clicked.connect(self.close)
+        btn_exit.setGraphicsEffect(make_shadow())
 
         btn_minimized = QPushButton("–")
         btn_minimized.setFixedWidth(50)
         btn_minimized.setFixedHeight(30)
         btn_minimized.setObjectName("funcKeys")
         btn_minimized.clicked.connect(self.showMinimized)
+        btn_minimized.setGraphicsEffect(make_shadow())
 
         btn_maximaze = QPushButton("▭")
         btn_maximaze.setFixedWidth(50)
         btn_maximaze.setFixedHeight(30)
         btn_maximaze.setObjectName("funcKeys")
         btn_maximaze.clicked.connect(self.toggleMaximaze)
+        btn_maximaze.setGraphicsEffect(make_shadow())
+
+        self.region_box = QComboBox()
+        self.region_box.setObjectName("RegionBox")
+        self.region_box.addItems([
+            "EUNE", "EUW", "KR", "NA", "LAN", "LAS", "OCE", "BR", "TR", "RU", "JP"
+        ])
+        self.selected_region = "EUNE"
+        self.region_box.currentTextChanged.connect(self.set_region)
 
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("e.g Dogbomb#luv")
@@ -178,8 +206,8 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_convert_puuid)
         top_bar.addWidget(btn_clash_info)
         top_bar.addStretch()
+        top_bar.addWidget(self.region_box)
         top_bar.addWidget(self.search_box)
-       
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
@@ -217,6 +245,9 @@ class MainWindow(QWidget):
 
 
 
+    def set_region(self, region):
+            self.selected_region = region
+
     def summoner_info(self):
         
         text = self.search_box.text().strip()
@@ -231,15 +262,15 @@ class MainWindow(QWidget):
         if puuid is None:
             return
 
-        summoner_name, summoner_tag =get_champions_info_by_puuid_without_input(puuid)
-        summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid)
-        real_flex_rank, real_solo_duo_rank, summoners_icon, summoners_level, puuid = print_user_info(summoners_icon, summoners_level, puuid, summoners_rank)
+        summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
+        summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
+        real_flex_rank, real_solo_duo_rank = get_real_ranks(summoners_rank)
 
         self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"), alignment=Qt.AlignTop | Qt.AlignLeft)
 
         pixmap = get_icon(summoners_icon)
         
-        winrate = 20
+        winrate = 20 
 
         if pixmap:
             pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -284,7 +315,6 @@ class MainWindow(QWidget):
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
         self.right_column.addWidget(logoflex)
-        
 
     def toggleMaximaze(self):
         if self.isMaximized():
@@ -294,12 +324,19 @@ class MainWindow(QWidget):
             
     def mousePressEvent(self, event):
         if event.button() == Qt.LeftButton:
-            self.dragPos = event.globalPos()
+            self.dragPos = event.globalPos() - self.frameGeometry().topLeft()
+            event.accept()
 
     def mouseMoveEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            self.move(self.pos() + event.globalPos() - self.dragPos)
-            self.dragPos = event.globalPos()
+        if event.buttons() == Qt.LeftButton and self.dragPos is not None:
+            self.move(event.globalPos() - self.dragPos)
+            event.accept()
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self.dragPos = None
+
+    
     
 
 
@@ -316,29 +353,3 @@ window = MainWindow()
 window.setWindowFlag(Qt.FramelessWindowHint)
 window.show()
 sys.exit(app.exec_())
-
-
-
-    # if user_input == "1":
-    #     puuid = get_puuid()
-    #     summoners_name, summoners_level, summoners_rank = get_summoners_level(puuid)
-    #     print_user_info(summoners_name, summoners_level, puuid, summoners_rank)
-        
-    # elif user_input == "2":
-    #     clash_info()
-    # elif user_input == "3":
-    #     print("For Normal matches press 1")
-    #     print("For Ranked matches press 2")
-    #     user_input2 = input("Enter your choice: ")
-    #     if user_input2 == "1":
-    #         convert_match_ids(get_user_normal_match_history())
-    #     elif user_input2 == "2":
-    #         convert_match_ids(get_user_ranked_match_history())
-    # elif user_input == "4":
-    #     get_free_champions()
-    # elif user_input == "5":
-    #     get_User_info_by_puuid()
-    # elif user_input == "x":
-    #     break
-    # else:
-    #     print("Wrong input")
