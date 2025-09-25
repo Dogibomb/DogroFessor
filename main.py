@@ -20,75 +20,59 @@ class InfoLabel(QLabel):
         self.setFixedWidth(470)
         self.setFixedHeight(37)
 
-def get_pixmap_from_url(url):
-    try:
-        data = urlopen(url).read()
-        pixmap = QPixmap()
-        pixmap.loadFromData(data)
-        return pixmap
-    except Exception as e:
-        print("Failed to load pixmap:", e)
-        return QPixmap("placeholder.png")  # fallback
-
-
 class MatchWidget(QWidget):
-    def __init__(self, team1_icons, team2_icons, result_text="", icon_size=40):
+    def __init__(self, team1_icons, team2_icons, result_text=""):
         super().__init__()
         self.setObjectName("matchWidget")
-        layout = QHBoxLayout()
-        layout.setSpacing(12)
-        layout.setContentsMargins(6, 6, 6, 6)
 
-        # levý tým (5 ikon)
-        left = QWidget()
-        left_layout = QHBoxLayout()
-        left_layout.setSpacing(6)
-        left_layout.setContentsMargins(0,0,0,0)
-        left.setLayout(left_layout)
+        def make_team_layout(icons):
+            vbox = QVBoxLayout()
+            vbox.setSpacing(0)
+            vbox.setContentsMargins(0,0,0,0)
+            row_layout = None
+            for i, path in enumerate(icons):
+                if i % 5 == 0:
+                    row_layout = QHBoxLayout()
+                    row_layout.setSpacing(0)
+                    vbox.addLayout(row_layout)
+                pix = QPixmap(path)
+                pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                lbl = QLabel()
+                lbl.setPixmap(pix)
+                
+                
+                row_layout.addWidget(lbl)
+            return vbox
 
-        for path in team1_icons:
-            lbl = QLabel()
-            pix = get_pixmap_from_url(path) 
-            pix = pix.scaled(icon_size, icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            lbl.setPixmap(pix)
-            lbl.setFixedSize(icon_size, icon_size)
-            left_layout.addWidget(lbl)
+        team1 = make_team_layout(team1_icons)
+        team2 = make_team_layout(team2_icons)
 
-        # výsledek uprostřed
-        mid = QLabel(result_text)
-        mid.setFixedWidth(160)
-        mid.setAlignment(Qt.AlignCenter)
-        mid.setObjectName("matchResultLabel")
+        team1_widget = QWidget()
+        team1_widget.setLayout(team1)
+        team2_widget = QWidget()
+        team2_widget.setLayout(team2)
 
-        # pravý tým (5 ikon)
-        right = QWidget()
-        right_layout = QHBoxLayout()
-        right_layout.setSpacing(6)
-        right_layout.setContentsMargins(0,0,0,0)
-        right.setLayout(right_layout)
+        teams_layout = QVBoxLayout()
+        teams_layout.setContentsMargins(0,0,0,0)
+        teams_layout.setSpacing(0)
+        teams_layout.addWidget(team1_widget)
+        teams_layout.addWidget(team2_widget)
+        teams_layout.setAlignment(Qt.AlignLeft)
+        teams_widget = QWidget()
+        teams_widget.setLayout(teams_layout)
+        
+        outer_layout = QVBoxLayout()
+        outer_layout.setContentsMargins(0, 0, 0, 0)
+        outer_layout.addLayout(teams_layout)
 
-        for path in team2_icons:
-            lbl = QLabel()
-            pix = get_pixmap_from_url(path)
-            pix = pix.scaled(icon_size, icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            lbl.setPixmap(pix)
-            lbl.setFixedSize(icon_size, icon_size)
-            right_layout.addWidget(lbl)
-
-        layout.addWidget(left, 1)
-        layout.addWidget(mid, 0)
-        layout.addWidget(right, 1)
-        self.setLayout(layout)
-
-        # čára pod zápasem (opcionalně)
         line = QFrame()
+        line.setObjectName("Line")
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
-        main_v = QVBoxLayout()
-        main_v.setContentsMargins(0,0,0,0)
-        main_v.addLayout(layout)
-        main_v.addWidget(line)
-        self.setLayout(main_v)
+        outer_layout.addWidget(line)
+        outer_layout.addWidget(teams_widget)
+
+        self.setLayout(outer_layout)
 
 
 def make_shadow():
@@ -336,12 +320,12 @@ class MainWindow(QWidget):
 
         for m in matches_data:
             
-            team1_champs = [f"http://ddragon.leagueoflegends.com/cdn/15.19.1/img/champion/{p['champion']}.png" for p in m["team1"]]
-            
-            team2_champs = [f"http://ddragon.leagueoflegends.com/cdn/15.19.1/img/champion/{p['champion']}.png" for p in m["team2"]]
-            result_text = f"{m['duration']} min"
+            team1_champs = [f"icons/{p['champion']}.png" for p in m["team1"]]
+            team2_champs = [f"icons/{p['champion']}.png" for p in m["team2"]]
 
-            match_widget = MatchWidget(team1_champs, team2_champs, result_text)
+            duration = f"{m['duration']} min"
+
+            match_widget = MatchWidget(team1_champs, team2_champs, duration)
             self.middle_column.addWidget(match_widget)
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)

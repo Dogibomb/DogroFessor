@@ -87,3 +87,7 @@ InfoLabel {
     selection-color: white;
     border: 1px solid #A78BFA;
 }
+#Line{
+    background-color: #A78BFA;
+    max-height: 1px;  
+}

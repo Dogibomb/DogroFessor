@@ -19,7 +19,7 @@ def get_user_normal_match_history():
 
 def get_user_ranked_match_history(name, tag):
     puuid = get_puuid(name, tag)
-    api_url_ranked_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=ranked&start=0&count=1"
+    api_url_ranked_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=ranked&start=0&count=5"
 
     response_ranked = requests.get(api_url_ranked_matches + '&api_key=' + API_KEY)
 
@@ -67,5 +67,5 @@ def convert_match_ids(match_ids):
             "team2": team2,
         })
 
-        return matches_data
+    return matches_data
     
