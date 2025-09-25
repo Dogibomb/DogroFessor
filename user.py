@@ -3,23 +3,6 @@ import requests
 from PyQt5.QtWidgets import QInputDialog, QMessageBox
 from PyQt5.QtGui import QPixmap
 
-
-def get_User_info_by_puuid():
-    puuid = input("Enter Puuid: ")
-    api_url = "https://europe.api.riotgames.com/riot/account/v1/accounts/by-puuid/" + puuid
-    api_url = api_url + '?api_key=' + API_KEY
-    response = requests.get(api_url)
-
-    if response.status_code != 200:
-        print("Error:", response.json()["status"]["status_code"])
-        print("Invalid puuid")
-        return None
-
-    summoners_name = str(response.json()['gameName'])
-    summoners_tag = str(response.json()['tagLine'])
-    print("Summoner name: " + summoners_name)
-    print("Summoner tag: " + summoners_tag)
-
 ##------------------- GET SUMMONERS LEVEL ------------------##
 
 def get_summoners_level(puuid, region):

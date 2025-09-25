@@ -1,5 +1,10 @@
 from api_key import API_KEY
 import requests
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDialog
+from PyQt5.QtGui import QPixmap, QIcon, QColor
+from PyQt5.QtGui import QPixmap, QPainter, QBrush, QPainterPath
 
 def get_champions_info():
     champion_url = "https://ddragon.leagueoflegends.com/cdn/15.18.1/data/en_US/champion.json"
@@ -21,7 +26,8 @@ def get_free_champions():
 
     free_champions = response.json()
 
-    print("Free champion rotation:")
+    text = QWidget()
+    
     count = 0
     for champ_id in free_champions['freeChampionIds']:
         if count == 5:

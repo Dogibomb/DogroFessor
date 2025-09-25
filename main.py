@@ -1,15 +1,16 @@
 from api_key import API_KEY
 from clash import clash_info
-from user import get_User_info_by_puuid, get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
+from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
 from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
 
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtWidgets import QDialog
-from PyQt5.QtGui import QPixmap, QIcon, QColor
-from PyQt5.QtGui import QPixmap, QPainter, QBrush, QPainterPath
+from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush
+from urllib.request import urlopen
+from io import BytesIO
 
 class InfoLabel(QLabel):
     def __init__(self, text):
@@ -17,8 +18,79 @@ class InfoLabel(QLabel):
         self.setObjectName("summonerInfoTab")
         self.setAlignment(Qt.AlignCenter)
         self.setFixedWidth(470)
-        self.setFixedHeight(33)
-        
+        self.setFixedHeight(37)
+
+def get_pixmap_from_url(url):
+    try:
+        data = urlopen(url).read()
+        pixmap = QPixmap()
+        pixmap.loadFromData(data)
+        return pixmap
+    except Exception as e:
+        print("Failed to load pixmap:", e)
+        return QPixmap("placeholder.png")  # fallback
+
+
+class MatchWidget(QWidget):
+    def __init__(self, team1_icons, team2_icons, result_text="", icon_size=40):
+        super().__init__()
+        self.setObjectName("matchWidget")
+        layout = QHBoxLayout()
+        layout.setSpacing(12)
+        layout.setContentsMargins(6, 6, 6, 6)
+
+        # levý tým (5 ikon)
+        left = QWidget()
+        left_layout = QHBoxLayout()
+        left_layout.setSpacing(6)
+        left_layout.setContentsMargins(0,0,0,0)
+        left.setLayout(left_layout)
+
+        for path in team1_icons:
+            lbl = QLabel()
+            pix = get_pixmap_from_url(path) 
+            pix = pix.scaled(icon_size, icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            lbl.setPixmap(pix)
+            lbl.setFixedSize(icon_size, icon_size)
+            left_layout.addWidget(lbl)
+
+        # výsledek uprostřed
+        mid = QLabel(result_text)
+        mid.setFixedWidth(160)
+        mid.setAlignment(Qt.AlignCenter)
+        mid.setObjectName("matchResultLabel")
+
+        # pravý tým (5 ikon)
+        right = QWidget()
+        right_layout = QHBoxLayout()
+        right_layout.setSpacing(6)
+        right_layout.setContentsMargins(0,0,0,0)
+        right.setLayout(right_layout)
+
+        for path in team2_icons:
+            lbl = QLabel()
+            pix = get_pixmap_from_url(path)
+            pix = pix.scaled(icon_size, icon_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            lbl.setPixmap(pix)
+            lbl.setFixedSize(icon_size, icon_size)
+            right_layout.addWidget(lbl)
+
+        layout.addWidget(left, 1)
+        layout.addWidget(mid, 0)
+        layout.addWidget(right, 1)
+        self.setLayout(layout)
+
+        # čára pod zápasem (opcionalně)
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        main_v = QVBoxLayout()
+        main_v.setContentsMargins(0,0,0,0)
+        main_v.addLayout(layout)
+        main_v.addWidget(line)
+        self.setLayout(main_v)
+
+
 def make_shadow():
     shadow = QGraphicsDropShadowEffect()
     shadow.setBlurRadius(15)       # jak moc je rozmazaný
@@ -59,15 +131,14 @@ def standardize_icon(pixmap, size=300):
 
     return canvas
 
-
-def clash_info():
-    pass
-def match_history():
-    pass
-def free_champions():
-    pass
-def convert_puuid():
-    pass
+def clearLayout(layout):
+    while layout.count():
+        item = layout.takeAt(0)
+        widget = item.widget()
+        if widget is not None:
+            widget.deleteLater()
+        else:
+            clearLayout(item.layout())
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -78,91 +149,8 @@ class MainWindow(QWidget):
 
         self.dragPos = None
 
-        self.setStyleSheet("""
-            QWidget {
-                background-color: #20232A;
-                color: white;
-                font-size: 18px;
-            }
-
-            QPushButton {
-                background-color: #A78BFA;
-                color: white;
-                font-size: 20px;
-                border-radius: 6px;
-                padding: 6px 12px;
-            }
-
-            QPushButton:hover {
-                background-color: #8B5CF6;
-            }
-            
-            QPushButton:pressed{
-                background-color: #7C3AED;
-            }
-
-            QPushButton#exitButton {
-                background-color: #8B5CF6;
-                border-radius: 4px;
-                width: 30px;
-            }
-
-            QLineEdit {
-                margin-left: 10px;
-                background-color: #2C313C;
-                border: 1px solid #A78BFA;
-                color: white;
-                font-size: 20px;
-                padding: 6px;
-                border-radius: 4px;
-            }
-            InfoLabel{
-                background-color: #2C313C;
-                color: white;
-                font-size: 20px;
-                padding: 6px;
-                border-radius: 4px;   
-            }
-            #iconLabel{
-                background-color: transparent;
-           }
-            #topBar{
-                background-color: #2C313C;
-                              
-            }
-            #logo{
-                background-color: #2C313C;
-                margin: 0px;
-                
-            }
-            #funcKeys{
-                font-size: 20px;
-                
-            }
-            #RegionBox{
-                background-color: #2C313C;
-                color: white;
-                font-size: 16px;
-                padding: 6px;
-                border: 1px solid #A78BFA;
-                border-radius: 2px;       
-            }
-            #RegionBox:hover {
-                border: 1px solid #8B5CF6;
-            }
-            #RegionBox::drop-down {
-                image: url(feature.png);
-                border-left: 1px solid #A78BFA;
-                width: 25px;
-                background-color: #2C313C;
-            }
-            #RegionBox QAbstractItemView {
-                color: white;
-                selection-background-color: #8B5CF6;
-                selection-color: white;
-                border: 1px solid #A78BFA;
-            }      
-        """)
+        with open("styles.qss", "r") as f:
+            self.setStyleSheet(f.read())
 
         top_bar_widget = QWidget()
         top_bar_widget.setObjectName("topBar")
@@ -189,8 +177,9 @@ class MainWindow(QWidget):
         btn_free_champions = QPushButton("Free champs")
         btn_free_champions.setFixedWidth(150)
         btn_free_champions.setGraphicsEffect(make_shadow())
+        btn_free_champions.clicked.connect(self.free_champs)
 
-        btn_convert_puuid = QPushButton("Convert Puuid")
+        btn_convert_puuid = QPushButton("Find Group")
         btn_convert_puuid.setFixedWidth(150)
         btn_convert_puuid.setGraphicsEffect(make_shadow())
 
@@ -257,6 +246,9 @@ class MainWindow(QWidget):
         self.middle_column.setAlignment(Qt.AlignTop)
         
 
+
+
+
         self.left_column = QVBoxLayout()
         
 
@@ -280,11 +272,14 @@ class MainWindow(QWidget):
 
         self.setLayout(main_layout)
 
-
-
     def set_region(self, region):
             self.selected_region = region
 
+    def free_champs(self):
+        pass
+        # get_free_champions()
+
+    # vypisuje summoners info to vyhledevani basicly
     def summoner_info(self):
         
         text = self.search_box.text().strip()
@@ -305,6 +300,10 @@ class MainWindow(QWidget):
 
         winrate = calculate_winrate(summoners_rank)
 
+        clearLayout(self.left_column)
+        clearLayout(self.middle_column)
+        clearLayout(self.right_column)
+
         self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank} / Winrate: {winrate[0]}%"), alignment=Qt.AlignTop | Qt.AlignLeft)
 
         pixmap = get_icon(summoners_icon)
@@ -324,20 +323,32 @@ class MainWindow(QWidget):
         info_widget = QWidget()
         info_row = QHBoxLayout()
         info_widget.setLayout(info_row)
-        
         info_row.addWidget(text_label)
         info_row.addWidget(icon_label)
-
-
         self.middle_column.addWidget(info_widget)
 
+        match_ids = get_user_ranked_match_history(summoner_name, summoner_tag)
+        matches_data = convert_match_ids(match_ids)
         
+        matches_layout = QVBoxLayout()
+
+        
+
+        for m in matches_data:
+            
+            team1_champs = [f"http://ddragon.leagueoflegends.com/cdn/15.19.1/img/champion/{p['champion']}.png" for p in m["team1"]]
+            
+            team2_champs = [f"http://ddragon.leagueoflegends.com/cdn/15.19.1/img/champion/{p['champion']}.png" for p in m["team2"]]
+            result_text = f"{m['duration']} min"
+
+            match_widget = MatchWidget(team1_champs, team2_champs, result_text)
+            self.middle_column.addWidget(match_widget)
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
         
         self.middle_column.setContentsMargins(0,0,0,0)
-        self.right_column.setContentsMargins(0,12,0,0)
-        self.left_column.setContentsMargins(0,12,0,0)
+        self.right_column.setContentsMargins(0,10,0,0)
+        self.left_column.setContentsMargins(0,10,0,0)
 
         rankIconsolo = check_what_rank(real_solo_duo_rank)
         rankIconflex = check_what_rank(real_flex_rank)
@@ -382,15 +393,6 @@ class MainWindow(QWidget):
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             self.dragPos = None
-
-    
-    
-
-
-        
-
-
-
 
 
 app = QApplication(sys.argv)
