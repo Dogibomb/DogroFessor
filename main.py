@@ -16,7 +16,8 @@ class InfoLabel(QLabel):
         super().__init__(text)
         self.setObjectName("summonerInfoTab")
         self.setAlignment(Qt.AlignCenter)
-        self.setFixedWidth(500)
+        self.setFixedWidth(470)
+        self.setFixedHeight(33)
         
 def make_shadow():
     shadow = QGraphicsDropShadowEffect()
@@ -44,6 +45,19 @@ def round_pixmap(pixmap):
     
     return rounded    
     
+def standardize_icon(pixmap, size=300):
+    canvas = QPixmap(size, size)
+    canvas.fill(Qt.transparent)  # průhledné pozadí
+
+    scaled = pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+    painter = QPainter(canvas)
+    x = (size - scaled.width()) // 2
+    y = (size - scaled.height()) // 2
+    painter.drawPixmap(x, y, scaled)
+    painter.end()
+
+    return canvas
 
 
 def clash_info():
@@ -113,14 +127,17 @@ class MainWindow(QWidget):
                 background-color: transparent;
            }
             #topBar{
-                background-color: #2C313C;   
+                background-color: #2C313C;
+                              
             }
             #logo{
                 background-color: #2C313C;
                 margin: 0px;
+                
             }
             #funcKeys{
                 font-size: 20px;
+                
             }
             #RegionBox{
                 background-color: #2C313C;
@@ -231,7 +248,7 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
-
+        top_bar.setContentsMargins(0,0,10,0)
         
         self.right_column = QVBoxLayout()
         
@@ -303,28 +320,32 @@ class MainWindow(QWidget):
             self.middle_column.addWidget(icon_label, alignment=Qt.AlignCenter)
         text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
        
-        # vytvoříme widget pro řádek
+
         info_widget = QWidget()
         info_row = QHBoxLayout()
         info_widget.setLayout(info_row)
-
-        # přidáme ikonku a text do layoutu
-        
         
         info_row.addWidget(text_label)
         info_row.addWidget(icon_label)
 
-        # přidáme celý widget do middle_column
+
         self.middle_column.addWidget(info_widget)
+
+        
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
         
+        self.middle_column.setContentsMargins(0,0,0,0)
+        self.right_column.setContentsMargins(0,12,0,0)
+        self.left_column.setContentsMargins(0,12,0,0)
+
         rankIconsolo = check_what_rank(real_solo_duo_rank)
         rankIconflex = check_what_rank(real_flex_rank)
 
         logosolo = QLabel()
         pixmapsolo = QPixmap(f"ranky/{rankIconsolo}")
         pixmapsolo = pixmapsolo.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmapsolo = standardize_icon(pixmapsolo, 300)
         logosolo.setPixmap(pixmapsolo)
         logosolo.setObjectName("logoRank")
         logosolo.setAlignment(Qt.AlignCenter)
@@ -334,10 +355,13 @@ class MainWindow(QWidget):
         logoflex = QLabel()
         pixmapflex = QPixmap(f"ranky/{rankIconflex}")
         pixmapflex = pixmapflex.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmapflex = standardize_icon(pixmapflex, 300)
         logoflex.setPixmap(pixmapflex)
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
         self.right_column.addWidget(logoflex)
+
+
 
     def toggleMaximaze(self):
         if self.isMaximized():
