@@ -21,58 +21,95 @@ class InfoLabel(QLabel):
         self.setFixedHeight(37)
 
 class MatchWidget(QWidget):
-    def __init__(self, team1_icons, team2_icons, result_text=""):
+    def __init__(self, team1_icons, team2_icons, duration, name, kda):
         super().__init__()
         self.setObjectName("matchWidget")
+        
 
         def make_team_layout(icons):
             vbox = QVBoxLayout()
             vbox.setSpacing(0)
             vbox.setContentsMargins(0,0,0,0)
             row_layout = None
-            for i, path in enumerate(icons):
+            my_icon_champ = None
+            for i, player in enumerate(icons):
                 if i % 5 == 0:
                     row_layout = QHBoxLayout()
                     row_layout.setSpacing(0)
                     vbox.addLayout(row_layout)
-                pix = QPixmap(path)
+                pix = QPixmap(player["icon"])
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
                 
+                if player["name"].lower() == name.lower():
+                    lbl.setStyleSheet("border: 2px solid limegreen; border-radius: 5px;")
+                    my_icon_champ = player["icon"]
+                    
+
                 
                 row_layout.addWidget(lbl)
-            return vbox
+            return vbox, my_icon_champ
 
-        team1 = make_team_layout(team1_icons)
-        team2 = make_team_layout(team2_icons)
+        team1_layout, champ1_icon = make_team_layout(team1_icons)
+        team2_layout, champ2_icon = make_team_layout(team2_icons)
 
-        team1_widget = QWidget()
-        team1_widget.setLayout(team1)
-        team2_widget = QWidget()
-        team2_widget.setLayout(team2)
+        team_container_layout = QVBoxLayout()
+        team_container_layout.setContentsMargins(0,0,0,0)
+        team_container_layout.setSpacing(6)
+        team_container_layout.addLayout(team1_layout)
+        team_container_layout.addLayout(team2_layout)
 
-        teams_layout = QVBoxLayout()
-        teams_layout.setContentsMargins(0,0,0,0)
-        teams_layout.setSpacing(0)
-        teams_layout.addWidget(team1_widget)
-        teams_layout.addWidget(team2_widget)
-        teams_layout.setAlignment(Qt.AlignLeft)
-        teams_widget = QWidget()
-        teams_widget.setLayout(teams_layout)
+        teams_container = QWidget()
+        teams_container.setLayout(team_container_layout)
+
+        champ_info = QVBoxLayout()
+        champ_info.setAlignment(Qt.AlignCenter)
+
+        my_icon_champ = champ1_icon or champ2_icon  
+
         
-        outer_layout = QVBoxLayout()
-        outer_layout.setContentsMargins(0, 0, 0, 0)
-        outer_layout.addLayout(teams_layout)
+        
+        kda_stat = QLabel(kda) 
+        champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
+
+        
+
+        if my_icon_champ:
+            pix = QPixmap(my_icon_champ).scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            champ_label = QLabel()
+            champ_label.setPixmap(pix)
+            champ_info.addWidget(champ_label, alignment=Qt.AlignCenter) 
+
+        duration = QLabel(f"Game Duration: {duration}")
+        
+        champ_widget = QWidget()
+        champ_widget.setLayout(champ_info)
+
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(duration, alignment=Qt.AlignLeft)
+        top_layout.addStretch()
+        top_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
+        top_layout.addStretch()
+
+        bottom_layout = QHBoxLayout()
+        bottom_layout.addWidget(teams_container, alignment=Qt.AlignLeft)
+        bottom_layout.addStretch()  
+
+        main_layout = QVBoxLayout()
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.addLayout(top_layout)
+        main_layout.addLayout(bottom_layout)
+        
+        
 
         line = QFrame()
         line.setObjectName("Line")
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
-        outer_layout.addWidget(line)
-        outer_layout.addWidget(teams_widget)
-
-        self.setLayout(outer_layout)
+        main_layout.addWidget(line)
+    
+        self.setLayout(main_layout)
 
 
 def make_shadow():
@@ -257,7 +294,7 @@ class MainWindow(QWidget):
         self.setLayout(main_layout)
 
     def set_region(self, region):
-            self.selected_region = region
+        self.selected_region = region
 
     def free_champs(self):
         pass
@@ -272,12 +309,16 @@ class MainWindow(QWidget):
             QMessageBox.warning(self, "Warning", "You have to enter valid tag in format Name#Tag")
             return
 
+        self.summ_name = text
+
         name, tag = text.split("#", 1)
 
         puuid = get_puuid(name, tag)
         if puuid is None:
             return
 
+        
+        
         summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
         real_flex_rank, real_solo_duo_rank = get_real_ranks(summoners_rank)
@@ -312,20 +353,24 @@ class MainWindow(QWidget):
         self.middle_column.addWidget(info_widget)
 
         match_ids = get_user_ranked_match_history(summoner_name, summoner_tag)
-        matches_data = convert_match_ids(match_ids)
-        
-        matches_layout = QVBoxLayout()
-
-        
+        matches_data = convert_match_ids(match_ids, summoner_name)        
 
         for m in matches_data:
             
-            team1_champs = [f"icons/{p['champion']}.png" for p in m["team1"]]
-            team2_champs = [f"icons/{p['champion']}.png" for p in m["team2"]]
+            team1_champs = [
+                {"icon": f"icons/{p['champion']}.png", "name": p["name"]}
+                for p in m["team1"]]
+                                
+            team2_champs = [
+                {"icon": f"icons/{p['champion']}.png", "name": p["name"]}
+                for p in m["team2"]]
+            
 
             duration = f"{m['duration']} min"
+            
+            kda = f"{m["kda"]}"
 
-            match_widget = MatchWidget(team1_champs, team2_champs, duration)
+            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda)
             self.middle_column.addWidget(match_widget)
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)

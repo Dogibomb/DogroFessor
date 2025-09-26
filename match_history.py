@@ -31,7 +31,7 @@ def get_user_ranked_match_history(name, tag):
     
     return ranked_matches
 
-def convert_match_ids(match_ids):
+def convert_match_ids(match_ids, summoners_name):
     matchlist = []
     for match_id in match_ids:
         api_url_convertor = "https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id
@@ -55,16 +55,20 @@ def convert_match_ids(match_ids):
         for i, p in enumerate(players):
             champ = p["championName"]
             kda = f"{p["kills"]}/{p["deaths"]}/{p["assists"]}"
-            player_data = {"champion": champ, "kda":kda, "win": p["win"]}
+            nametag = f"{p["riotIdGameName"]}#{p["riotIdTagline"]}"
+            player_data = {"champion": champ, "kda":kda, "name": nametag}
             if i < 5:
                 team1.append(player_data)
             else:
                 team2.append(player_data)
-        
+            if p["riotIdGameName"].lower() == summoners_name.lower():
+                my_kda = kda    
         matches_data.append({
             "duration": game_duration,
             "team1": team1,
             "team2": team2,
+            "name": summoners_name,
+            "kda": my_kda,
         })
 
     return matches_data
