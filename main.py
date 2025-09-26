@@ -41,12 +41,12 @@ class MatchWidget(QWidget):
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
+
+                lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
                 
                 if player["name"].lower() == name.lower():
                     lbl.setStyleSheet("border: 2px solid limegreen; border-radius: 5px;")
                     my_icon_champ = player["icon"]
-                    
-
                 
                 row_layout.addWidget(lbl)
             return vbox, my_icon_champ
@@ -56,7 +56,7 @@ class MatchWidget(QWidget):
 
         team_container_layout = QVBoxLayout()
         team_container_layout.setContentsMargins(0,0,0,0)
-        team_container_layout.setSpacing(6)
+        team_container_layout.setSpacing(0)
         team_container_layout.addLayout(team1_layout)
         team_container_layout.addLayout(team2_layout)
 
@@ -66,16 +66,15 @@ class MatchWidget(QWidget):
         champ_info = QVBoxLayout()
         champ_info.setAlignment(Qt.AlignCenter)
 
-        my_icon_champ = champ1_icon or champ2_icon  
-
-        
+        my_icon_champ = champ1_icon or champ2_icon
         
         kda_stat = QLabel(kda) 
-        champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
+        
 
         if my_icon_champ:
             pix = QPixmap(my_icon_champ).scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
             champ_label = QLabel() 
+            
             champ_label.setPixmap(pix) 
             champ_info.addWidget(champ_label, alignment=Qt.AlignCenter)
 
@@ -90,17 +89,26 @@ class MatchWidget(QWidget):
         middle_layout = QVBoxLayout()
         middle_layout.addWidget(duration, alignment=Qt.AlignCenter)
         middle_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
+        champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
 
-        left_middle = QHBoxLayout()
-        left_middle.setContentsMargins(0,0,0,0)
-        left_middle.setSpacing(0)
-        left_middle.addLayout(left_layout)
-        left_middle.addLayout(middle_layout)
+        random_text1 = "ahoj jak se mas"
+        random_text1 = QWidget()
+        right_layout = QVBoxLayout()
+        right_layout.addWidget(random_text1)
+
+        left_middle_right = QHBoxLayout()
+        left_middle_right.setContentsMargins(0,0,0,0)
+        left_middle_right.setSpacing(0)
+        left_middle_right.addLayout(left_layout)
+        left_middle_right.addLayout(middle_layout)
+        left_middle_right.addLayout(right_layout)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.addLayout(left_middle)
-
+        main_layout.setSpacing(0)
+        
+        main_layout.addLayout(left_middle_right)
+        
         
         
 
@@ -108,6 +116,7 @@ class MatchWidget(QWidget):
         line.setObjectName("Line")
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
+        
         main_layout.addWidget(line)
     
         self.setLayout(main_layout)
@@ -267,6 +276,7 @@ class MainWindow(QWidget):
         self.middle_column = QVBoxLayout()
         self.middle_column.setAlignment(Qt.AlignTop)
         
+        
 
 
 
@@ -373,6 +383,7 @@ class MainWindow(QWidget):
 
             match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda)
             self.middle_column.addWidget(match_widget)
+            
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
         
