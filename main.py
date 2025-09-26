@@ -2,7 +2,7 @@ from api_key import API_KEY
 from clash import clash_info
 from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
-from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids
+from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history
 
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
@@ -363,7 +363,7 @@ class MainWindow(QWidget):
         info_row.addWidget(icon_label)
         self.middle_column.addWidget(info_widget)
 
-        match_ids = get_user_ranked_match_history(summoner_name, summoner_tag)
+        match_ids = get_user_match_history(summoner_name, summoner_tag)
         matches_data = convert_match_ids(match_ids, summoner_name)        
 
         for m in matches_data:

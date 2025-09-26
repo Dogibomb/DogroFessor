@@ -31,6 +31,20 @@ def get_user_ranked_match_history(name, tag):
     
     return ranked_matches
 
+def get_user_match_history(name, tag):
+    puuid = get_puuid(name, tag)
+    api_url_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
+
+    response = requests.get(api_url_matches + '&api_key=' + API_KEY)
+
+    if response.status_code != 200:
+        print("Error:", response.json()["status"]["status_code"])
+        return None
+    
+    matches = response.json()
+    
+    return matches
+
 def convert_match_ids(match_ids, summoners_name):
     matchlist = []
     for match_id in match_ids:
