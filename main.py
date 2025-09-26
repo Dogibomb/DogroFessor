@@ -73,33 +73,34 @@ class MatchWidget(QWidget):
         kda_stat = QLabel(kda) 
         champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
 
-        
-
         if my_icon_champ:
-            pix = QPixmap(my_icon_champ).scaled(120, 120, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-            champ_label = QLabel()
-            champ_label.setPixmap(pix)
-            champ_info.addWidget(champ_label, alignment=Qt.AlignCenter) 
+            pix = QPixmap(my_icon_champ).scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
+            champ_label = QLabel() 
+            champ_label.setPixmap(pix) 
+            champ_info.addWidget(champ_label, alignment=Qt.AlignCenter)
 
         duration = QLabel(f"Game Duration: {duration}")
         
         champ_widget = QWidget()
         champ_widget.setLayout(champ_info)
 
-        top_layout = QHBoxLayout()
-        top_layout.addWidget(duration, alignment=Qt.AlignLeft)
-        top_layout.addStretch()
-        top_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
-        top_layout.addStretch()
+        left_layout = QVBoxLayout()
+        left_layout.addWidget(teams_container, alignment=Qt.AlignLeft)
+        
+        middle_layout = QVBoxLayout()
+        middle_layout.addWidget(duration, alignment=Qt.AlignCenter)
+        middle_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
 
-        bottom_layout = QHBoxLayout()
-        bottom_layout.addWidget(teams_container, alignment=Qt.AlignLeft)
-        bottom_layout.addStretch()  
+        left_middle = QHBoxLayout()
+        left_middle.setContentsMargins(0,0,0,0)
+        left_middle.setSpacing(0)
+        left_middle.addLayout(left_layout)
+        left_middle.addLayout(middle_layout)
 
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.addLayout(top_layout)
-        main_layout.addLayout(bottom_layout)
+        main_layout.addLayout(left_middle)
+
         
         
 
