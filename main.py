@@ -6,11 +6,12 @@ from match_history import get_user_normal_match_history, get_user_ranked_match_h
 
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush
 from urllib.request import urlopen
 from io import BytesIO
+
 
 class InfoLabel(QLabel):
     def __init__(self, text):
@@ -120,6 +121,7 @@ class MatchWidget(QWidget):
         main_layout.addWidget(line)
     
         self.setLayout(main_layout)
+
 
 
 def make_shadow():
@@ -273,25 +275,48 @@ class MainWindow(QWidget):
         self.right_column = QVBoxLayout()
         
 
-        self.middle_column = QVBoxLayout()
-        self.middle_column.setAlignment(Qt.AlignTop)
+
+                # vytvoříme widget, který bude prostřední sloupec (do něj vložíme info + scroll)
+        self.middle_widget = QWidget()
+        self.middle_widget_layout = QVBoxLayout(self.middle_widget)
+        self.middle_widget_layout.setContentsMargins(0,0,0,0)
+        self.middle_widget_layout.setSpacing(8)
+
         
+        self.info_holder = QWidget()
+        self.info_layout = QVBoxLayout(self.info_holder)
+        self.info_layout.setContentsMargins(0,0,0,0)
+        self.info_layout.setSpacing(4)
+        self.middle_widget_layout.addWidget(self.info_holder)
+
         
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setFixedHeight(650)
+        self.scroll_content = QWidget()
+        self.matches_layout = QVBoxLayout(self.scroll_content)
+        self.matches_layout.setContentsMargins(0,0,0,0)
+        self.matches_layout.setSpacing(6)
+        self.matches_layout.setAlignment(Qt.AlignTop)
+        self.scroll_area.setWidget(self.scroll_content)
+        self.middle_widget_layout.addWidget(self.scroll_area)
 
-
-
+        
 
         self.left_column = QVBoxLayout()
+
+        
+        self.center_layout = QHBoxLayout()
+        self.center_layout.addLayout(self.right_column, stretch=1)
+        self.center_layout.addWidget(self.middle_widget, stretch=2)
+        self.center_layout.addLayout(self.left_column, stretch=1)
+        self.center_layout.setAlignment(Qt.AlignTop)
         
 
 
-        self.center_layout = QHBoxLayout()
-        self.center_layout.addLayout(self.right_column, stretch=1)
-        self.center_layout.addLayout(self.middle_column, stretch=1)
-        self.center_layout.addLayout(self.left_column, stretch=1)
-        self.center_layout.setAlignment(Qt.AlignTop)
-        # self.center_layout.setContentsMargins(12, 12, 12, 12)
-        # self.center_layout.setSpacing(40)
+
+
+        
 
         main_layout = QVBoxLayout()
         
@@ -337,31 +362,35 @@ class MainWindow(QWidget):
         winrate = calculate_winrate(summoners_rank)
 
         clearLayout(self.left_column)
-        clearLayout(self.middle_column)
+        clearLayout(self.info_layout)      
         clearLayout(self.right_column)
+        clearLayout(self.matches_layout)
 
         self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank} / Winrate: {winrate[0]}%"), alignment=Qt.AlignTop | Qt.AlignLeft)
 
         pixmap = get_icon(summoners_icon)
         
-        
+        # vytvoření textu a ikony
+        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
 
+        icon_label = QLabel()
         if pixmap:
             pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
             pixmap = round_pixmap(pixmap)
-            icon_label = QLabel()
             icon_label.setPixmap(pixmap)
             icon_label.setObjectName("iconLabel")
-            self.middle_column.addWidget(icon_label, alignment=Qt.AlignCenter)
-        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
-       
 
+        
         info_widget = QWidget()
         info_row = QHBoxLayout()
         info_widget.setLayout(info_row)
         info_row.addWidget(text_label)
         info_row.addWidget(icon_label)
-        self.middle_column.addWidget(info_widget)
+
+        
+        self.info_layout.addWidget(info_widget)
+
+        
 
         match_ids = get_user_match_history(summoner_name, summoner_tag)
         matches_data = convert_match_ids(match_ids, summoner_name)        
@@ -382,12 +411,13 @@ class MainWindow(QWidget):
             kda = f"{m["kda"]}"
 
             match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda)
-            self.middle_column.addWidget(match_widget)
+            
+            self.matches_layout.addWidget(match_widget)
             
 
         self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
         
-        self.middle_column.setContentsMargins(0,0,0,0)
+        self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.right_column.setContentsMargins(0,10,0,0)
         self.left_column.setContentsMargins(0,10,0,0)
 
@@ -412,6 +442,7 @@ class MainWindow(QWidget):
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
         self.right_column.addWidget(logoflex)
+
 
 
 

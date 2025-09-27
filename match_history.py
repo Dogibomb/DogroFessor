@@ -33,7 +33,7 @@ def get_user_ranked_match_history(name, tag):
 
 def get_user_match_history(name, tag):
     puuid = get_puuid(name, tag)
-    api_url_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=5"
+    api_url_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=10"
 
     response = requests.get(api_url_matches + '&api_key=' + API_KEY)
 
