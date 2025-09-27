@@ -1,6 +1,6 @@
 import requests
 from user import get_champions_info_by_puuid_without_input, get_puuid
-from api_key import API_KEY
+from api_git.api_key import API_KEY
 
 def clash_info():
     puuid = get_puuid()

@@ -1,7 +1,8 @@
-from api_key import API_KEY
+from api_git.api_key import API_KEY
 import requests
 from PyQt5.QtWidgets import QInputDialog, QMessageBox
 from PyQt5.QtGui import QPixmap
+from cache import *
 
 ##------------------- GET SUMMONERS LEVEL ------------------##
 
@@ -15,7 +16,7 @@ def get_summoners_level(puuid, region):
         region = "na1"
     if region == "eune":
         region = "eun1"
-    if region == "LAN":
+    if region == "lan":
         region = "la1"
     if region == "las":
         region = "la2"
@@ -26,6 +27,11 @@ def get_summoners_level(puuid, region):
     if region == "JP":
         region = "jp1"
 
+    key = f"summoner_{puuid}_{region}"
+    cached = get_from_cache(key)
+    if cached:
+        return cached["icon"], cached["level"], cached["rank"]
+    
     api_url1 = f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/by-puuid/" + puuid
     api_url1 = api_url1 + '?api_key=' + API_KEY
     api_url2 = f"https://{region}.api.riotgames.com/lol/league/v4/entries/by-puuid/" + puuid
@@ -44,6 +50,12 @@ def get_summoners_level(puuid, region):
     summoners_icon = str(response_level.json()['profileIconId'])
     summoners_level = str(response_level.json()['summonerLevel'])
     summoners_rank = response_rank.json()
+
+    set_to_cache(key, {
+        "icon": summoners_icon,
+        "level": summoners_level,
+        "rank": summoners_rank,
+    })
 
     return summoners_icon, summoners_level, summoners_rank
 
@@ -102,14 +114,19 @@ def get_champions_info_by_puuid_without_input(puuid):
 
 
 def get_puuid(name, tag):
-    
+    key = f"puuid_{name}#{tag}"
+    cached = get_from_cache(key)
+    if cached:
+        return cached
     puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}"
     
     response = requests.get(puuid_url_finder)
     
     if response.status_code == 200:
         data = response.json()
-        return data["puuid"]
+        puuid = data["puuid"]
+        set_to_cache(key, puuid)
+        return puuid
     else:
         msg = QMessageBox()
         msg.setText("Ses invalida stejne jako to jmeno")

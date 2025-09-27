@@ -75,7 +75,7 @@ InfoLabel {
 }
 
 #RegionBox::drop-down {
-    image: url(feature.png);
+    image: url(ikony/arrow.png);
     border-left: 1px solid #A78BFA;
     width: 25px;
     background-color: #2C313C;
@@ -91,4 +91,19 @@ InfoLabel {
     background-color: #A78BFA;
     max-height: 1px;  
 }
-
+QScrollArea {
+    border: none;
+    background: transparent;
+}
+QScrollBar:vertical {
+    width: 5px;                  
+}
+QScrollBar::handle:vertical {
+    background: #A78BFA;             /* barva "jezdce" */
+    min-height: 10px;             /* minimální velikost jezdce */
+    border-radius: 4px;           /* zaoblení rohů */
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background: none;
+}

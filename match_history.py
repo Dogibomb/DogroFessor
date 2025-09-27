@@ -1,7 +1,8 @@
-from api_key import API_KEY
+from api_git.api_key import API_KEY
 import requests
 import time
 from user import get_puuid, get_champions_info_by_puuid_without_input, get_summoners_level
+from cache import *
 
 def get_user_normal_match_history():
     puuid = get_puuid()
@@ -33,6 +34,12 @@ def get_user_ranked_match_history(name, tag):
 
 def get_user_match_history(name, tag):
     puuid = get_puuid(name, tag)
+
+    key = f"matches_{puuid}"
+    cached = get_from_cache(key)
+    if cached:
+        return cached
+
     api_url_matches = f"https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/{puuid}/ids?start=0&count=10"
 
     response = requests.get(api_url_matches + '&api_key=' + API_KEY)
@@ -43,19 +50,29 @@ def get_user_match_history(name, tag):
     
     matches = response.json()
     
+    set_to_cache(key, matches)
+
     return matches
 
 def convert_match_ids(match_ids, summoners_name):
     matchlist = []
     for match_id in match_ids:
-        api_url_convertor = "https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id
-        response = requests.get(api_url_convertor + '?api_key=' + API_KEY)
+        key = f"match_{match_id}"
+        cached = get_from_cache(key)
+        if cached:
+            match = cached
+        else:
+            api_url_convertor = "https://europe.api.riotgames.com/lol/match/v5/matches/" + match_id
+            response = requests.get(api_url_convertor + '?api_key=' + API_KEY)
 
-        if response.status_code != 200:
-            print("Error:", response.json()["status"]["status_code"])
-            continue
+            if response.status_code != 200:
+                print("Error:", response.json()["status"]["status_code"])
+                continue
+            
+            match = response.json()
+            set_to_cache(key, match)
 
-        matchlist.append(response.json())
+        matchlist.append(match)
         
 
     matches_data = []

@@ -1,4 +1,4 @@
-from api_key import API_KEY
+from api_git.api_key import API_KEY
 from clash import clash_info
 from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
@@ -193,7 +193,7 @@ class MainWindow(QWidget):
         top_bar.setContentsMargins(0, 0, 0, 0)
         
         logo = QLabel(top_bar_widget) 
-        pixmap = QPixmap("logo.png") 
+        pixmap = QPixmap("ikony/logo.png") 
         pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
         logo.setPixmap(pixmap) 
         logo.setObjectName("logo") 
