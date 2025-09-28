@@ -38,7 +38,7 @@ class MatchWidget(QWidget):
                     row_layout = QHBoxLayout()
                     row_layout.setSpacing(0)
                     vbox.addLayout(row_layout)
-                pix = QPixmap(player["icon"])
+                pix = QPixmap(resource_path(player["icon"]))
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
@@ -122,7 +122,14 @@ class MatchWidget(QWidget):
     
         self.setLayout(main_layout)
 
+def resource_path(relative_path):
+    import sys, os
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
 
+    return os.path.join(base_path, relative_path)
 
 def make_shadow():
     shadow = QGraphicsDropShadowEffect()
@@ -182,24 +189,25 @@ class MainWindow(QWidget):
 
         self.dragPos = None
 
-        with open("styles.qss", "r") as f:
+        with open(resource_path("styles.qss"), "r") as f:
             self.setStyleSheet(f.read())
+
 
         top_bar_widget = QWidget()
         top_bar_widget.setObjectName("topBar")
         top_bar_widget.setFixedHeight(70)
         top_bar = QHBoxLayout(top_bar_widget)
-        top_bar.setSpacing(8)
+        
         top_bar.setContentsMargins(0, 0, 0, 0)
         
         logo = QLabel(top_bar_widget) 
-        pixmap = QPixmap("ikony/logo.png") 
-        pixmap = pixmap.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
+        pixmap = QPixmap(resource_path("ikony/logo.png")) 
+        pixmap = pixmap.scaled(130, 130, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
         logo.setPixmap(pixmap) 
         logo.setObjectName("logo") 
         logo.setFixedSize(pixmap.size()) 
         logo.setContentsMargins(0, 0, 0, 0) 
-        logo.move(40, -5)
+        logo.move(40, 3)
 
 
 
@@ -270,7 +278,7 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
-        top_bar.setContentsMargins(0,0,10,0)
+        top_bar.setContentsMargins(0,0,40,0)
         
         self.right_column = QVBoxLayout()
         
@@ -398,11 +406,11 @@ class MainWindow(QWidget):
         for m in matches_data:
             
             team1_champs = [
-                {"icon": f"icons/{p['champion']}.png", "name": p["name"]}
+                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
                 for p in m["team1"]]
                                 
             team2_champs = [
-                {"icon": f"icons/{p['champion']}.png", "name": p["name"]}
+                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
                 for p in m["team2"]]
             
 
@@ -425,7 +433,7 @@ class MainWindow(QWidget):
         rankIconflex = check_what_rank(real_flex_rank)
 
         logosolo = QLabel()
-        pixmapsolo = QPixmap(f"ranky/{rankIconsolo}")
+        pixmapsolo = QPixmap(resource_path(f"ranky/{rankIconsolo}"))
         pixmapsolo = pixmapsolo.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         pixmapsolo = standardize_icon(pixmapsolo, 300)
         logosolo.setPixmap(pixmapsolo)
@@ -435,7 +443,7 @@ class MainWindow(QWidget):
         self.left_column.addWidget(logosolo)
 
         logoflex = QLabel()
-        pixmapflex = QPixmap(f"ranky/{rankIconflex}")
+        pixmapflex = QPixmap(resource_path(f"ranky/{rankIconflex}"))
         pixmapflex = pixmapflex.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
         pixmapflex = standardize_icon(pixmapflex, 300)
         logoflex.setPixmap(pixmapflex)
@@ -468,7 +476,7 @@ class MainWindow(QWidget):
 
 
 app = QApplication(sys.argv)
-icon = QIcon("logo.png")
+icon = QIcon(resource_path("logo.png"))
 app.setWindowIcon(icon)
 window = MainWindow()
 window.setWindowFlag(Qt.FramelessWindowHint)

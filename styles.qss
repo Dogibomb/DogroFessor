@@ -55,6 +55,7 @@ InfoLabel {
 #logo {
     background-color: #2C313C;
     margin: 0px;
+    
 }
 
 #funcKeys {
