@@ -2,7 +2,7 @@ from api_git.api_key import API_KEY
 from clash import clash_info
 from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
-from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history, convert_item_ids
+from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history
 
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
@@ -393,7 +393,7 @@ class MainWindow(QWidget):
         clearLayout(self.right_column)
         clearLayout(self.matches_layout)
 
-        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank} / Winrate: {winrate[0]}%"), alignment=Qt.AlignTop | Qt.AlignLeft)
+        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"), alignment=Qt.AlignTop | Qt.AlignLeft)
 
         pixmap = get_icon(summoners_icon)
         
@@ -433,7 +433,7 @@ class MainWindow(QWidget):
                 for p in m["team2"]]
             
             my_item_ids = m['items']
-            my_items = convert_item_ids(my_item_ids)
+            
             duration = f"{m['duration']} min"
             
             kda = f"{m["kda"]}"
@@ -443,8 +443,12 @@ class MainWindow(QWidget):
             self.matches_layout.addWidget(match_widget)
             
 
-        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank} / Winrate: {winrate[1]}%"), alignment=Qt.AlignTop | Qt.AlignRight)
-        
+        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"), alignment=Qt.AlignTop | Qt.AlignRight)
+        winrate_solo = winrate[0]
+        winrate_flex = winrate[1]
+        winrate_flex_lbl = QLabel(f"Winrate: {winrate_flex}%")
+        winrate_solo_lbl = QLabel(f"Winrate: {winrate_solo}%")
+
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.right_column.setContentsMargins(0,10,0,0)
         self.left_column.setContentsMargins(0,10,0,0)
@@ -461,6 +465,7 @@ class MainWindow(QWidget):
         logosolo.setAlignment(Qt.AlignCenter)
 
         self.left_column.addWidget(logosolo)
+        self.left_column.addWidget(winrate_solo_lbl)
 
         logoflex = QLabel()
         pixmapflex = QPixmap(resource_path(f"ranky/{rankIconflex}"))
@@ -470,7 +475,8 @@ class MainWindow(QWidget):
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
         self.right_column.addWidget(logoflex)
-
+        self.right_column.addWidget(winrate_flex_lbl)
+        
 
 
 
