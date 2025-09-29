@@ -82,9 +82,19 @@ def convert_match_ids(match_ids, summoners_name):
 
         team1 = []
         team2 = []
-
+        my_items = []
         for i, p in enumerate(players):
             champ = p["championName"]
+            items = []
+            
+            for item in range(7):
+                item_id = p.get(f"item{item}")
+                if item_id and item_id != 0:
+                    if p["riotIdGameName"].lower() == summoners_name.lower():
+                        my_items.append(item_id)
+                    else:
+                        items.append(item_id)
+            
             kda = f"{p["kills"]}/{p["deaths"]}/{p["assists"]}"
             nametag = f"{p["riotIdGameName"]}#{p["riotIdTagline"]}"
             player_data = {"champion": champ, "kda":kda, "name": nametag}
@@ -92,15 +102,31 @@ def convert_match_ids(match_ids, summoners_name):
                 team1.append(player_data)
             else:
                 team2.append(player_data)
+            
             if p["riotIdGameName"].lower() == summoners_name.lower():
-                my_kda = kda    
+                my_kda = kda
+                
+
         matches_data.append({
             "duration": game_duration,
             "team1": team1,
             "team2": team2,
             "name": summoners_name,
             "kda": my_kda,
+            "items": my_items
         })
 
     return matches_data
     
+def convert_item_ids(items_id):
+    items_url = "http://ddragon.leagueoflegends.com/cdn/15.18.1/data/en_US/item.json"
+    response = requests.get(items_url)
+    data = response.json()
+
+    items_data = []
+    for item_id in items_id:
+        item_info = data["data"].get(str(item_id))
+        if item_info:
+            items_data.append(item_info["name"])
+    
+    return items_data

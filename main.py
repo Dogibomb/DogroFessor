@@ -2,7 +2,7 @@ from api_git.api_key import API_KEY
 from clash import clash_info
 from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
-from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history
+from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history, convert_item_ids
 
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
@@ -22,7 +22,7 @@ class InfoLabel(QLabel):
         self.setFixedHeight(37)
 
 class MatchWidget(QWidget):
-    def __init__(self, team1_icons, team2_icons, duration, name, kda):
+    def __init__(self, team1_icons, team2_icons, duration, name, kda, items):
         super().__init__()
         self.setObjectName("matchWidget")
         
@@ -51,6 +51,26 @@ class MatchWidget(QWidget):
                 
                 row_layout.addWidget(lbl)
             return vbox, my_icon_champ
+        
+        def make_item_layout(items):
+            vbox = QVBoxLayout()
+            vbox.setSpacing(0)
+            vbox.setContentsMargins(0,0,0,0)
+            row_layout = None
+            for i, item_name in enumerate(items):
+                if i % 4 == 0:
+                    row_layout = QHBoxLayout()
+                    row_layout.setSpacing(0)
+                    vbox.addLayout(row_layout)
+                pix = QPixmap(resource_path(f"items_icons/{item_name}"))
+                pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                lbl = QLabel()
+                lbl.setPixmap(pix)
+
+                lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+                
+                row_layout.addWidget(lbl)
+            return vbox
 
         team1_layout, champ1_icon = make_team_layout(team1_icons)
         team2_layout, champ2_icon = make_team_layout(team2_icons)
@@ -70,7 +90,6 @@ class MatchWidget(QWidget):
         my_icon_champ = champ1_icon or champ2_icon
         
         kda_stat = QLabel(kda) 
-        
 
         if my_icon_champ:
             pix = QPixmap(my_icon_champ).scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
@@ -92,13 +111,13 @@ class MatchWidget(QWidget):
         middle_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
         champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
 
-        random_text1 = "ahoj jak se mas"
-        random_text1 = QWidget()
+        item_layout = make_item_layout(items)
         right_layout = QVBoxLayout()
-        right_layout.addWidget(random_text1)
+        right_layout.setContentsMargins(20,0,0,0)
+        right_layout.addLayout(item_layout)
 
         left_middle_right = QHBoxLayout()
-        left_middle_right.setContentsMargins(0,0,0,0)
+        left_middle_right.setContentsMargins(0,0,20,0)
         left_middle_right.setSpacing(0)
         left_middle_right.addLayout(left_layout)
         left_middle_right.addLayout(middle_layout)
@@ -413,12 +432,13 @@ class MainWindow(QWidget):
                 {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
                 for p in m["team2"]]
             
-
+            my_item_ids = m['items']
+            my_items = convert_item_ids(my_item_ids)
             duration = f"{m['duration']} min"
             
             kda = f"{m["kda"]}"
 
-            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda)
+            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids)
             
             self.matches_layout.addWidget(match_widget)
             
