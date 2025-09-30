@@ -319,10 +319,11 @@ class MainWindow(QWidget):
         
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
-        self.scroll_area.setFixedHeight(650)
+        self.scroll_area.setFixedHeight(630)
+        
         self.scroll_content = QWidget()
         self.matches_layout = QVBoxLayout(self.scroll_content)
-        self.matches_layout.setContentsMargins(0,0,0,0)
+        self.matches_layout.setContentsMargins(0,0,5,0)
         self.matches_layout.setSpacing(6)
         self.matches_layout.setAlignment(Qt.AlignTop)
         self.scroll_area.setWidget(self.scroll_content)
@@ -393,7 +394,7 @@ class MainWindow(QWidget):
         clearLayout(self.right_column)
         clearLayout(self.matches_layout)
 
-        self.left_column.addWidget(InfoLabel(f"Solo/Duo rank: {real_solo_duo_rank}"), alignment=Qt.AlignTop | Qt.AlignLeft)
+        
 
         pixmap = get_icon(summoners_icon)
         
@@ -441,42 +442,75 @@ class MainWindow(QWidget):
             match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids)
             
             self.matches_layout.addWidget(match_widget)
-            
-
-        self.right_column.addWidget(InfoLabel(f"Flex rank: {real_flex_rank}"), alignment=Qt.AlignTop | Qt.AlignRight)
-        winrate_solo = winrate[0]
-        winrate_flex = winrate[1]
-        winrate_flex_lbl = QLabel(f"Winrate: {winrate_flex}%")
-        winrate_solo_lbl = QLabel(f"Winrate: {winrate_solo}%")
-
-        self.middle_widget_layout.setContentsMargins(0,0,0,0)
-        self.right_column.setContentsMargins(0,10,0,0)
-        self.left_column.setContentsMargins(0,10,0,0)
+        
+        #soloque     
+        solo_container = QHBoxLayout()
+        
+        header = QLabel("Solo/Duo")
+        header.setObjectName("rankHeader")
+        header.setAlignment(Qt.AlignCenter)
+        self.right_column.addWidget(header)
 
         rankIconsolo = check_what_rank(real_solo_duo_rank)
-        rankIconflex = check_what_rank(real_flex_rank)
+        winrate_solo = winrate[0]
 
         logosolo = QLabel()
         pixmapsolo = QPixmap(resource_path(f"ranky/{rankIconsolo}"))
-        pixmapsolo = pixmapsolo.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        pixmapsolo = standardize_icon(pixmapsolo, 300)
+        pixmapsolo = pixmapsolo.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmapsolo = standardize_icon(pixmapsolo, 150)
         logosolo.setPixmap(pixmapsolo)
         logosolo.setObjectName("logoRank")
         logosolo.setAlignment(Qt.AlignCenter)
 
-        self.left_column.addWidget(logosolo)
-        self.left_column.addWidget(winrate_solo_lbl)
+        
+        solo_info_layout = QVBoxLayout()
+        solo_info_layout.addWidget(QLabel(f"{real_solo_duo_rank}"))
+        solo_info_layout.addWidget(QLabel(f"LP: 2"))
+        solo_info_layout.addWidget(QLabel(f"Wins: 2"))
+        solo_info_layout.addWidget(QLabel(f"Losses: 3"))
+        solo_info_layout.addWidget(QLabel(f"Winrate: {winrate_solo}%"))
+
+        solo_container.addWidget(logosolo)
+        solo_container.addLayout(solo_info_layout)
+
+        self.right_column.addLayout(solo_container)
+
+        
+        #flex
+        flex_container = QHBoxLayout()
+        headerflex = QLabel("Flex")
+        headerflex.setObjectName("rankHeader")
+        headerflex.setAlignment(Qt.AlignCenter)
+        self.left_column.addWidget(headerflex)
+
+        winrate_flex = winrate[1]
+        rankIconflex = check_what_rank(real_flex_rank)
 
         logoflex = QLabel()
         pixmapflex = QPixmap(resource_path(f"ranky/{rankIconflex}"))
-        pixmapflex = pixmapflex.scaled(300, 300, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        pixmapflex = standardize_icon(pixmapflex, 300)
+        pixmapflex = pixmapflex.scaled(150, 150, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmapflex = standardize_icon(pixmapflex, 150)
         logoflex.setPixmap(pixmapflex)
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
-        self.right_column.addWidget(logoflex)
-        self.right_column.addWidget(winrate_flex_lbl)
+
         
+
+        flex_info_layout = QVBoxLayout()
+        flex_info_layout.addWidget(QLabel(f"{real_flex_rank}"))
+        flex_info_layout.addWidget(QLabel(f"LP: 2"))
+        flex_info_layout.addWidget(QLabel(f"Wins: 2"))
+        flex_info_layout.addWidget(QLabel(f"Losses: 2"))
+        flex_info_layout.addWidget(QLabel(f"Winrate: {winrate_flex}%"))
+        
+        flex_container.addWidget(logoflex)
+        flex_container.addLayout(flex_info_layout)
+
+        self.left_column.addLayout(flex_container)
+        
+        self.middle_widget_layout.setContentsMargins(0,0,0,0)
+        self.right_column.setContentsMargins(0,10,0,0)
+        self.left_column.setContentsMargins(0,10,0,0)
 
 
 
