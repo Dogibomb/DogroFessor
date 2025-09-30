@@ -18,7 +18,7 @@ class InfoLabel(QLabel):
         super().__init__(text)
         self.setObjectName("summonerInfoTab")
         self.setAlignment(Qt.AlignCenter)
-        self.setFixedWidth(470)
+        self.setFixedWidth(500)
         self.setFixedHeight(37)
 
 class MatchWidget(QWidget):
@@ -308,6 +308,7 @@ class MainWindow(QWidget):
         self.middle_widget_layout = QVBoxLayout(self.middle_widget)
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.middle_widget_layout.setSpacing(8)
+        self.middle_widget.setFixedSize(600, 700)
 
         
         self.info_holder = QWidget()
@@ -332,7 +333,7 @@ class MainWindow(QWidget):
         
 
         self.left_column = QVBoxLayout()
-
+        
         
         self.center_layout = QHBoxLayout()
         self.center_layout.addLayout(self.right_column, stretch=1)
@@ -385,7 +386,7 @@ class MainWindow(QWidget):
         
         summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
         summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
-        real_flex_rank, real_solo_duo_rank = get_real_ranks(summoners_rank)
+        real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
 
         winrate = calculate_winrate(summoners_rank)
 
@@ -445,10 +446,13 @@ class MainWindow(QWidget):
         
         #soloque     
         solo_container = QHBoxLayout()
-        
+        solo_container.setAlignment(Qt.AlignTop)
         header = QLabel("Solo/Duo")
         header.setObjectName("rankHeader")
         header.setAlignment(Qt.AlignCenter)
+        header.setFixedHeight(30)
+
+        header.setContentsMargins(0,0,0,0)
         self.right_column.addWidget(header)
 
         rankIconsolo = check_what_rank(real_solo_duo_rank)
@@ -463,11 +467,13 @@ class MainWindow(QWidget):
         logosolo.setAlignment(Qt.AlignCenter)
 
         
+
         solo_info_layout = QVBoxLayout()
+        
         solo_info_layout.addWidget(QLabel(f"{real_solo_duo_rank}"))
-        solo_info_layout.addWidget(QLabel(f"LP: 2"))
-        solo_info_layout.addWidget(QLabel(f"Wins: 2"))
-        solo_info_layout.addWidget(QLabel(f"Losses: 3"))
+        solo_info_layout.addWidget(QLabel(f"LP: {lp_solo}"))
+        solo_info_layout.addWidget(QLabel(f"Wins: {wins_solo}"))
+        solo_info_layout.addWidget(QLabel(f"Losses: {losses_solo}"))
         solo_info_layout.addWidget(QLabel(f"Winrate: {winrate_solo}%"))
 
         solo_container.addWidget(logosolo)
@@ -478,9 +484,13 @@ class MainWindow(QWidget):
         
         #flex
         flex_container = QHBoxLayout()
+        flex_container.setAlignment(Qt.AlignTop)
+        flex_container.setContentsMargins(0,0,0,0)
         headerflex = QLabel("Flex")
         headerflex.setObjectName("rankHeader")
         headerflex.setAlignment(Qt.AlignCenter)
+        headerflex.setFixedHeight(30)
+        
         self.left_column.addWidget(headerflex)
 
         winrate_flex = winrate[1]
@@ -494,13 +504,14 @@ class MainWindow(QWidget):
         logoflex.setObjectName("logoRank")
         logoflex.setAlignment(Qt.AlignCenter)
 
-        
+         
 
         flex_info_layout = QVBoxLayout()
+        flex_container.setContentsMargins(0,0,0,0)
         flex_info_layout.addWidget(QLabel(f"{real_flex_rank}"))
-        flex_info_layout.addWidget(QLabel(f"LP: 2"))
-        flex_info_layout.addWidget(QLabel(f"Wins: 2"))
-        flex_info_layout.addWidget(QLabel(f"Losses: 2"))
+        flex_info_layout.addWidget(QLabel(f"LP: {lp_flex}"))
+        flex_info_layout.addWidget(QLabel(f"Wins: {wins_flex}"))
+        flex_info_layout.addWidget(QLabel(f"Losses: {losses_flex}"))
         flex_info_layout.addWidget(QLabel(f"Winrate: {winrate_flex}%"))
         
         flex_container.addWidget(logoflex)
@@ -511,6 +522,7 @@ class MainWindow(QWidget):
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.right_column.setContentsMargins(0,10,0,0)
         self.left_column.setContentsMargins(0,10,0,0)
+        
 
 
 

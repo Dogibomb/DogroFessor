@@ -1,27 +1,13 @@
 {
     "puuid_dogbomb#luv": {
         "value": "LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ",
-        "timestamp": 1759247992.3357713
+        "timestamp": 1759249264.197099
     },
     "summoner_LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ_eun1": {
         "value": {
             "icon": "3231",
             "level": "191",
             "rank": [
-                {
-                    "leagueId": "e932203d-6bc5-4008-9845-05a2b4cc2d22",
-                    "queueType": "RANKED_SOLO_5x5",
-                    "tier": "EMERALD",
-                    "rank": "IV",
-                    "puuid": "LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ",
-                    "leaguePoints": 69,
-                    "wins": 123,
-                    "losses": 97,
-                    "veteran": false,
-                    "inactive": false,
-                    "freshBlood": false,
-                    "hotStreak": false
-                },
                 {
                     "leagueId": "925e2a99-ab3c-49f1-9084-1947f88a3cf9",
                     "queueType": "RANKED_FLEX_SR",
@@ -35,14 +21,28 @@
                     "inactive": false,
                     "freshBlood": false,
                     "hotStreak": false
+                },
+                {
+                    "leagueId": "e932203d-6bc5-4008-9845-05a2b4cc2d22",
+                    "queueType": "RANKED_SOLO_5x5",
+                    "tier": "EMERALD",
+                    "rank": "IV",
+                    "puuid": "LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ",
+                    "leaguePoints": 69,
+                    "wins": 123,
+                    "losses": 97,
+                    "veteran": false,
+                    "inactive": false,
+                    "freshBlood": false,
+                    "hotStreak": false
                 }
             ]
         },
-        "timestamp": 1759247993.1175828
+        "timestamp": 1759249264.9238174
     },
     "puuid_Dogbomb#Luv": {
         "value": "LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ",
-        "timestamp": 1759247994.2508354
+        "timestamp": 1759249265.5487578
     },
     "matches_LVIWyM6M-qsumRqSBfqZDHDqk0fEvF11Jf0-l36_8-4nxbGpYHIdgsbdhaqgCYm_p2BDEYwiRW3weQ": {
         "value": [
@@ -57,7 +57,7 @@
             "EUN1_3835347887",
             "EUN1_3833711033"
         ],
-        "timestamp": 1759247994.5712612
+        "timestamp": 1759249265.9180014
     },
     "match_EUN1_3837141094": {
         "value": {
@@ -3695,7 +3695,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247995.6886933
+        "timestamp": 1759249267.2141747
     },
     "match_EUN1_3837116134": {
         "value": {
@@ -7330,7 +7330,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247996.0524924
+        "timestamp": 1759249267.6754363
     },
     "match_EUN1_3836282401": {
         "value": {
@@ -10988,7 +10988,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247996.4458916
+        "timestamp": 1759249268.0786698
     },
     "match_EUN1_3836243559": {
         "value": {
@@ -14655,7 +14655,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247996.778914
+        "timestamp": 1759249268.4166708
     },
     "match_EUN1_3835475839": {
         "value": {
@@ -18324,7 +18324,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247997.2284718
+        "timestamp": 1759249268.777537
     },
     "match_EUN1_3835433902": {
         "value": {
@@ -22085,7 +22085,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247997.617814
+        "timestamp": 1759249269.1450927
     },
     "match_EUN1_3835347887": {
         "value": {
@@ -25760,7 +25760,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247997.9834468
+        "timestamp": 1759249269.5044873
     },
     "match_EUN1_3833711033": {
         "value": {
@@ -29461,7 +29461,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247998.3349106
+        "timestamp": 1759249269.860651
     },
     "match_EUN1_3833697237": {
         "value": {
@@ -57200,7 +57200,7 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247994.961541
+        "timestamp": 1759249266.353764
     },
     "match_EUN1_3837714414": {
         "value": {
@@ -60882,6 +60882,6 @@
                 "tournamentCode": ""
             }
         },
-        "timestamp": 1759247995.3153853
+        "timestamp": 1759249266.7925866
     }
 }

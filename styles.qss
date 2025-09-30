@@ -108,3 +108,7 @@ QScrollBar::add-page:vertical,
 QScrollBar::sub-page:vertical {
     background: none;
 }
+#rankHeader {
+    font-size: 18px;
+    font-weight: bold;
+}

@@ -80,16 +80,28 @@ def get_real_ranks(summoners_rank):
     solo_duo_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
     flex_rank = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
     try:
-        real_solo_duo_rank = str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"]) + " " + str(solo_duo_rank["leaguePoints"]) + " LP"
+        real_solo_duo_rank = str(solo_duo_rank["tier"]) + " " + str(solo_duo_rank["rank"])
+        lp_solo = solo_duo_rank["leaguePoints"]
+        wins_solo = solo_duo_rank["wins"]
+        losses_solo = solo_duo_rank["losses"]
     except:
         real_solo_duo_rank = "None rank"
+        lp_solo = "None"
+        wins_solo = "None"
+        losses_solo = "None"
     
     try:
-        real_flex_rank = str(flex_rank["tier"]) + " " + str(flex_rank["rank"]) + " " + str(flex_rank["leaguePoints"]) + " LP"
+        real_flex_rank = str(flex_rank["tier"]) + " " + str(flex_rank["rank"])
+        lp_flex = flex_rank["leaguePoints"]
+        wins_flex = flex_rank["wins"]
+        losses_flex = flex_rank["losses"]
     except:
         real_flex_rank = "None rank"
+        lp_flex = "None"
+        wins_flex = "None"
+        losses_flex = "None"
 
-    return real_flex_rank, real_solo_duo_rank
+    return real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo
 
 #------------------- GET CHAMPIONS INFO BY PUUID WITHOUT INPUT ------------------##
 
