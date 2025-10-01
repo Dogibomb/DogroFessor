@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 
 api_key.py
-../cache.json
+cache.json
+config.json
 
 .env

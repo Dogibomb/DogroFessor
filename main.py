@@ -2,16 +2,58 @@ from api_git.api_key import API_KEY
 from clash import clash_info
 from user import get_summoners_level, get_champions_info_by_puuid_without_input, get_puuid, get_icon, check_what_rank, get_real_ranks, calculate_winrate
 from freechamps import get_champions_info, get_free_champions
-from match_history import get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history
-
+from match_history import convert_item_ids, get_user_normal_match_history, get_user_ranked_match_history, convert_match_ids, get_user_match_history
+from config import *
+from load_summoner import load_summoner_layout
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush
 from urllib.request import urlopen
 from io import BytesIO
 
+class CustomInputDialog(QDialog):
+    def __init__(self, title, label_text, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.setFixedSize(350, 110)
+        self.setObjectName("inputDialog")
+        
+        with open(resource_path("styles.qss"), "r") as f:
+            self.setStyleSheet(f.read())
+
+        layout = QVBoxLayout()
+        self.label = QLabel(label_text)
+        self.input = QLineEdit()
+        self.button = QPushButton("OK")
+        self.button.clicked.connect(self.accept)
+
+        layout.addWidget(self.label)
+        layout.addWidget(self.input)
+        layout.addWidget(self.button)
+
+        self.setLayout(layout)
+
+    def get_input(self):
+        if self.exec_() == QDialog.Accepted:
+            return self.input.text(), True
+        else:
+            return "", False
+
+def get_mainAcc():
+    config = load_config()
+    if "mainAcc" in config:
+        return config["mainAcc"]
+
+    inputdialog = CustomInputDialog("Main Account", "Enter your main account (Name#Tag):")
+    name, ok = inputdialog.get_input()
+
+    if ok and name:
+        config["mainAcc"] = name
+        save_config(config)
+        return name
+    return None
 
 class InfoLabel(QLabel):
     def __init__(self, text):
@@ -21,10 +63,17 @@ class InfoLabel(QLabel):
         self.setFixedWidth(500)
         self.setFixedHeight(37)
 
+class ToolTipStyle(QProxyStyle):
+    def styleHint(self, hint, option=None, widget=None, returnData=None):
+        if hint == QStyle.SH_ToolTip_WakeUpDelay:
+            return 1  
+        return super().styleHint(hint, option, widget, returnData)
+
 class MatchWidget(QWidget):
-    def __init__(self, team1_icons, team2_icons, duration, name, kda, items):
+    def __init__(self, team1_icons, team2_icons, duration, name, kda, items, item_names):
         super().__init__()
         self.setObjectName("matchWidget")
+
         
 
         def make_team_layout(icons):
@@ -42,7 +91,9 @@ class MatchWidget(QWidget):
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
-
+                
+               
+                lbl.setToolTip(player["name"])
                 lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
                 
                 if player["name"].lower() == name.lower():
@@ -66,7 +117,7 @@ class MatchWidget(QWidget):
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
-
+                lbl.setToolTip(item_names[i])
                 lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
                 
                 row_layout.addWidget(lbl)
@@ -200,7 +251,7 @@ def clearLayout(layout):
             clearLayout(item.layout())
 
 class MainWindow(QWidget):
-    def __init__(self):
+    def __init__(self, main_account=None):
         super().__init__()
         self.setWindowTitle('DogroFessor')
         
@@ -208,9 +259,10 @@ class MainWindow(QWidget):
 
         self.dragPos = None
 
+
         with open(resource_path("styles.qss"), "r") as f:
             self.setStyleSheet(f.read())
-
+        
 
         top_bar_widget = QWidget()
         top_bar_widget.setObjectName("topBar")
@@ -345,8 +397,6 @@ class MainWindow(QWidget):
 
 
 
-        
-
         main_layout = QVBoxLayout()
         
         main_layout.addWidget(top_bar_widget)
@@ -357,6 +407,17 @@ class MainWindow(QWidget):
         # main_layout.setSpacing(0)
 
         self.setLayout(main_layout)
+
+        if main_account:
+            try:
+                if "#" in main_account:
+                    name, tag = main_account.split("#", 1)
+                    puuid = get_puuid(name, tag)
+                    if puuid:
+                        self.summ_name = main_account
+                        load_summoner_layout(self, name, tag, puuid)
+            except Exception as e:
+                QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
 
     def set_region(self, region):
         self.selected_region = region
@@ -440,7 +501,9 @@ class MainWindow(QWidget):
             
             kda = f"{m["kda"]}"
 
-            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids)
+            item_names = convert_item_ids(my_item_ids)
+
+            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids, item_names)
             
             self.matches_layout.addWidget(match_widget)
         
@@ -547,10 +610,19 @@ class MainWindow(QWidget):
             self.dragPos = None
 
 
+
+
 app = QApplication(sys.argv)
+app.setStyle(ToolTipStyle())
 icon = QIcon(resource_path("logo.png"))
 app.setWindowIcon(icon)
-window = MainWindow()
+
+main_account = get_mainAcc()
+
+window = MainWindow(main_account)
 window.setWindowFlag(Qt.FramelessWindowHint)
 window.show()
+
+
+
 sys.exit(app.exec_())

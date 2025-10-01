@@ -112,3 +112,40 @@ QScrollBar::sub-page:vertical {
     font-size: 18px;
     font-weight: bold;
 }
+QToolTip {
+    color: white;                
+    background-color: #2A2A2A;    
+    padding: 4px;                
+    font-size: 12px;                  
+    border-radius: 6px;          
+}
+
+
+
+#inputDialog{
+    background-color: #2A2A2A;
+    border-radius: 10px;
+    
+}
+#inputDialog QLabel{
+    color: white;
+    background-color: #2A2A2A;
+    font-size: 17px;
+}
+#inputDialog QLineEdit {
+    background-color: #2A2A2A;
+    color: white;
+    border-radius: 5px;
+    padding: 1px;
+    
+}
+#inputDialog QPushButton {
+    background-color: #2A2A2A;
+    color: white;
+    border-radius: 5px;
+
+    
+}
+#inputDialog QPushButton:hover {
+    background-color: #8B5CF6;
+}

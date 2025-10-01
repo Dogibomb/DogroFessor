@@ -117,3 +117,22 @@ def convert_match_ids(match_ids, summoners_name):
         })
 
     return matches_data
+
+def convert_item_ids(items_id):
+    key = f"items_{items_id}"
+    cached = get_from_cache(key)
+    if cached:
+        return cached
+    
+    items_url = "http://ddragon.leagueoflegends.com/cdn/15.18.1/data/en_US/item.json"
+    response = requests.get(items_url)
+    data = response.json()
+
+    items_data = []
+    for item_id in items_id:
+        item_info = data["data"].get(str(item_id))
+        if item_info:
+            items_data.append(item_info["name"])
+
+    set_to_cache(key, items_data)
+    return items_data
