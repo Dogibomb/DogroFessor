@@ -6,7 +6,7 @@ from match_history import convert_item_ids, get_user_normal_match_history, get_u
 from config import *
 from load_summoner import load_summoner_layout
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog, QMenu
 from PyQt5.QtCore import Qt, QSize, QTimer
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush
@@ -40,6 +40,18 @@ class CustomInputDialog(QDialog):
             return self.input.text(), True
         else:
             return "", False
+
+def get_mainAcc_Again():
+    config = load_config()
+
+    inputdialog = CustomInputDialog("Main Account", "Enter your main account (Name#Tag):")
+    name, ok = inputdialog.get_input()
+
+    if ok and name:
+        config["mainAcc"] = name
+        save_config(config)
+        return name
+    return None
 
 def get_mainAcc():
     config = load_config()
@@ -271,16 +283,23 @@ class MainWindow(QWidget):
         
         top_bar.setContentsMargins(0, 0, 0, 0)
         
-        logo = QLabel(top_bar_widget) 
+        logo = QPushButton(top_bar_widget) 
         pixmap = QPixmap(resource_path("ikony/logo.png")) 
-        pixmap = pixmap.scaled(130, 130, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
-        logo.setPixmap(pixmap) 
+        pixmap = pixmap.scaled(150, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
+        logo.setIcon(QIcon(pixmap)) 
         logo.setObjectName("logo") 
+        logo.setIconSize(pixmap.size())
         logo.setFixedSize(pixmap.size()) 
         logo.setContentsMargins(0, 0, 0, 0) 
-        logo.move(40, 3)
+        
 
+        account_changer = QMenu(logo)
+        change_account_action = account_changer.addAction("Change Main Account")
+        
 
+        change_account_action.triggered.connect(lambda: get_mainAcc_Again())
+
+        logo.setMenu(account_changer)
 
         btn_profile = QPushButton("Profil")
         btn_profile.setFixedWidth(150)
@@ -322,12 +341,42 @@ class MainWindow(QWidget):
 
         self.region_box = QComboBox()
         
-        self.region_box.setObjectName("RegionBox")
+        
         self.region_box.addItems([
             "EUNE", "EUW", "KR", "NA", "LAN", "LAS", "OCE", "BR", "TR", "RU", "JP"
         ])
         self.selected_region = "EUNE"
         self.region_box.currentTextChanged.connect(self.set_region)
+        arrow_path = resource_path("ikony/arrow2.png").replace("\\", "/")
+        self.region_box.setStyleSheet(f"""
+        QComboBox {{
+            background-color: #2C313C;
+            color: white;
+            font-size: 16px;
+            padding: 6px;
+            border: 1px solid #A78BFA;
+            border-radius: 2px;
+        }}
+
+        QComboBox:hover {{
+            border: 1px solid #8B5CF6;
+        }}
+
+        QComboBox::drop-down {{
+            image: url("{arrow_path}");
+            border-left: 1px solid #A78BFA;
+            width: 18px;
+            
+            background-color: #2C313C;
+        }}
+
+        QComboBox QAbstractItemView {{
+            color: white;
+            selection-background-color: #8B5CF6;
+            selection-color: white;
+            border: 1px solid #A78BFA;
+        }}
+        """)
 
         self.search_box = QLineEdit()
         self.search_box.setPlaceholderText("e.g Dogbomb#luv")
@@ -335,8 +384,8 @@ class MainWindow(QWidget):
         self.search_box.setContentsMargins(0,0,10,0)
         self.search_box.returnPressed.connect(self.summoner_info)
 
-        
-        # top_bar.addWidget(logo)
+        top_bar.addStretch()
+        top_bar.addWidget(logo)
         top_bar.addStretch()
         top_bar.addStretch()
         top_bar.addWidget(btn_profile)
