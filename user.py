@@ -1,4 +1,4 @@
-from api_git.api_key import API_KEY
+from api_key import API_KEY
 import requests
 from PyQt5.QtWidgets import QInputDialog, QMessageBox
 from PyQt5.QtGui import QPixmap

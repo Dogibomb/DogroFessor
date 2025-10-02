@@ -1,4 +1,4 @@
-from api_git.api_key import API_KEY
+from api_key import API_KEY
 import requests
 import time
 from user import get_puuid, get_champions_info_by_puuid_without_input, get_summoners_level

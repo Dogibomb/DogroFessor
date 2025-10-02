@@ -1,4 +1,4 @@
-from api_git.api_key import API_KEY
+from api_key import API_KEY
 import requests
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect
 from PyQt5.QtCore import Qt

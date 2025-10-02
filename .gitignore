@@ -3,7 +3,7 @@ __pycache__/
 .vscode/
 
 api_key.py
-**/cache.json
-**/config.json
+cache.json
+config.json
 
 .env
