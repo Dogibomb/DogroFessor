@@ -500,7 +500,6 @@ class MainWindow(QWidget):
         self.loading_icon = icon
 
         self.loading_lbl.setParent(self.middle_widget)
-        # self.loading_lbl.resize(100, 100)
         self.loading_lbl.move(
             (self.middle_widget.width() - self.loading_lbl.width()) // 2,
             (self.middle_widget.height() - self.loading_lbl.height()) // 2
