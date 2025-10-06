@@ -493,7 +493,7 @@ class MainWindow(QWidget):
         self.loading_lbl = QLabel()
         self.loading_lbl.setVisible(False)
         self.loading_lbl.setAlignment(Qt.AlignCenter)
-        self.loading_lbl.setStyleSheet("background-color: rgba(0,0,0,0.3); border-radius: 10px;")
+        
 
         icon = QMovie(resource_path("ikony/loading.gif"))
         self.loading_lbl.setMovie(icon)
