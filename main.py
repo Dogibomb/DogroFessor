@@ -7,11 +7,58 @@ from config import *
 from load_summoner import load_summoner_layout
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog, QMenu
-from PyQt5.QtCore import Qt, QSize, QTimer
+from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal
 from PyQt5.QtWidgets import QDialog
-from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush
+from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush, QMovie
 from urllib.request import urlopen
 from io import BytesIO
+
+class LoadingIcon(QThread):
+    finished = pyqtSignal(dict)
+    error = pyqtSignal(str)
+
+    def __init__(self, name, tag, region):
+        super().__init__()
+        self.name = name
+        self.tag = tag
+        self.region = region
+    
+    def run(self):
+        try:
+            puuid = get_puuid(self.name, self.tag)
+            if not puuid:
+                raise Exception("Could not get puuid")
+
+            summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
+            summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.region)
+            real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
+            winrate = calculate_winrate(summoners_rank)
+
+            match_ids = get_user_match_history(summoner_name, summoner_tag)
+            matches_data = convert_match_ids(match_ids, summoner_name)
+
+            data = {
+                "summoner_name": summoner_name,
+                "summoner_tag": summoner_tag,
+                "summoners_icon": summoners_icon,
+                "summoners_level": summoners_level,
+                "summoners_rank": summoners_rank,
+                "real_flex_rank": real_flex_rank,
+                "real_solo_duo_rank": real_solo_duo_rank,
+                "lp_flex": lp_flex,
+                "lp_solo": lp_solo,
+                "wins_flex": wins_flex,
+                "wins_solo": wins_solo,
+                "losses_flex": losses_flex,
+                "losses_solo": losses_solo,
+                "winrate": winrate,
+                "matches_data": matches_data
+            }
+
+            self.finished.emit(data)
+        except Exception as e:
+            self.error.emit(str(e))
+
 
 class CustomInputDialog(QDialog):
     def __init__(self, title, label_text, parent=None):
@@ -404,7 +451,7 @@ class MainWindow(QWidget):
         
 
 
-                # vytvoříme widget, který bude prostřední sloupec (do něj vložíme info + scroll)
+
         self.middle_widget = QWidget()
         self.middle_widget_layout = QVBoxLayout(self.middle_widget)
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
@@ -443,8 +490,13 @@ class MainWindow(QWidget):
         self.center_layout.setAlignment(Qt.AlignTop)
         
 
+        self.loading_lbl = QLabel()
+        self.loading_lbl.setVisible(False)
 
-
+        icon = QMovie(resource_path("ikony/loading.gif"))
+        self.loading_lbl.setMovie(icon)
+        self.loading_icon = icon
+        self.middle_widget_layout.addWidget(self.loading_lbl, alignment=Qt.AlignCenter)
 
         main_layout = QVBoxLayout()
         
@@ -468,50 +520,37 @@ class MainWindow(QWidget):
             except Exception as e:
                 QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
 
-    def set_region(self, region):
-        self.selected_region = region
-
-    def free_champs(self):
-        pass
-        # get_free_champions()
-
-    # vypisuje summoners info to vyhledevani basicly
-    def summoner_info(self):
+    def match_load_finished(self, data):
         
-        text = self.search_box.text().strip()
-
-        if "#" not in text:
-            QMessageBox.warning(self, "Warning", "You have to enter valid tag in format Name#Tag")
-            return
-
-        self.summ_name = text
-
-        name, tag = text.split("#", 1)
-
-        puuid = get_puuid(name, tag)
-        if puuid is None:
-            return
+        self.loading_icon.stop()
+        self.loading_lbl.setVisible(False)
 
         
-        
-        summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
-        summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
-        real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
-
-        winrate = calculate_winrate(summoners_rank)
-
         clearLayout(self.left_column)
-        clearLayout(self.info_layout)      
+        clearLayout(self.info_layout)
         clearLayout(self.right_column)
         clearLayout(self.matches_layout)
 
         
+        summoner_name = data["summoner_name"]
+        summoner_tag = data["summoner_tag"]
+        summoners_icon = data["summoners_icon"]
+        summoners_level = data["summoners_level"]
+        real_flex_rank = data["real_flex_rank"]
+        real_solo_duo_rank = data["real_solo_duo_rank"]
+        lp_flex = data["lp_flex"]
+        lp_solo = data["lp_solo"]
+        wins_flex = data["wins_flex"]
+        wins_solo = data["wins_solo"]
+        losses_flex = data["losses_flex"]
+        losses_solo = data["losses_solo"]
+        winrate = data["winrate"]
+        matches_data = data["matches_data"]
 
-        pixmap = get_icon(summoners_icon)
         
-        # vytvoření textu a ikony
-        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
+        pixmap = get_icon(summoners_icon)
 
+        text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
         icon_label = QLabel()
         if pixmap:
             pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -519,43 +558,12 @@ class MainWindow(QWidget):
             icon_label.setPixmap(pixmap)
             icon_label.setObjectName("iconLabel")
 
-        
         info_widget = QWidget()
-        info_row = QHBoxLayout()
-        info_widget.setLayout(info_row)
+        info_row = QHBoxLayout(info_widget)
         info_row.addWidget(text_label)
         info_row.addWidget(icon_label)
-
-        
         self.info_layout.addWidget(info_widget)
 
-        
-
-        match_ids = get_user_match_history(summoner_name, summoner_tag)
-        matches_data = convert_match_ids(match_ids, summoner_name)        
-
-        for m in matches_data:
-            
-            team1_champs = [
-                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
-                for p in m["team1"]]
-                                
-            team2_champs = [
-                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
-                for p in m["team2"]]
-            
-            my_item_ids = m['items']
-            
-            duration = f"{m['duration']} min"
-            
-            kda = f"{m["kda"]}"
-
-            item_names = convert_item_ids(my_item_ids)
-
-            match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids, item_names)
-            
-            self.matches_layout.addWidget(match_widget)
-        
         #soloque     
         solo_container = QHBoxLayout()
         solo_container.setAlignment(Qt.AlignTop)
@@ -594,6 +602,26 @@ class MainWindow(QWidget):
         self.right_column.addLayout(solo_container)
 
         
+
+        
+        for m in matches_data:
+            team1_champs = [
+                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
+                for p in m["team1"]
+            ]
+            team2_champs = [
+                {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
+                for p in m["team2"]
+            ]
+
+            my_item_ids = m["items"]
+            duration = f"{m['duration']} min"
+            kda = f"{m['kda']}"
+            item_names = convert_item_ids(my_item_ids)
+
+            match_widget = MatchWidget(team1_champs, team2_champs, duration, summoner_name, kda, my_item_ids, item_names)
+            self.matches_layout.addWidget(match_widget)
+
         #flex
         flex_container = QHBoxLayout()
         flex_container.setAlignment(Qt.AlignTop)
@@ -634,6 +662,76 @@ class MainWindow(QWidget):
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.right_column.setContentsMargins(0,10,0,0)
         self.left_column.setContentsMargins(0,10,0,0)
+
+    def set_region(self, region):
+        self.selected_region = region
+
+    def free_champs(self):
+        pass
+        # get_free_champions()
+
+    # vypisuje summoners info to vyhledevani basicly
+    def summoner_info(self):
+
+        text = self.search_box.text().strip()
+
+        if "#" not in text:
+            QMessageBox.warning(self, "Warning", "You have to enter valid tag in format Name#Tag")
+            return
+
+        self.summ_name = text
+
+        name, tag = text.split("#", 1)
+
+        self.loading_lbl.setVisible(True)
+        self.loading_icon.start()
+        
+        self.loader_thread = LoadingIcon(name, tag, self.selected_region)
+        self.loader_thread.finished.connect(self.match_load_finished)
+        # self.loader_thread.error.connect(self.on_match_load_error)
+        self.loader_thread.start()
+
+        # summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
+        # summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
+        # real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
+
+        # winrate = calculate_winrate(summoners_rank)
+
+        # clearLayout(self.left_column)
+        # clearLayout(self.info_layout)      
+        # clearLayout(self.right_column)
+        # clearLayout(self.matches_layout)
+
+        # match_ids = get_user_match_history(summoner_name, summoner_tag)
+        # matches_data = convert_match_ids(match_ids, summoner_name)
+
+        # pixmap = get_icon(summoners_icon)
+        
+        # vytvoření textu a ikony
+        # text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
+
+        # icon_label = QLabel()
+        # if pixmap:
+        #     pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        #     pixmap = round_pixmap(pixmap)
+        #     icon_label.setPixmap(pixmap)
+        #     icon_label.setObjectName("iconLabel")
+
+        
+        # info_widget = QWidget()
+        # info_row = QHBoxLayout()
+        # info_widget.setLayout(info_row)
+        # info_row.addWidget(text_label)
+        # info_row.addWidget(icon_label)
+
+        
+        # self.info_layout.addWidget(info_widget)
+
+        
+
+        
+        
+
         
 
 
