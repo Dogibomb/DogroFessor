@@ -7,7 +7,7 @@ from config import *
 from load_summoner import load_summoner_layout
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog, QMenu
-from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal
+from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush, QMovie
 from urllib.request import urlopen
@@ -314,7 +314,8 @@ class MainWindow(QWidget):
         super().__init__()
         self.setWindowTitle('DogroFessor')
         
-        self.setFixedSize(1500, 800)
+        
+        self.setMinimumSize(1500, 800)
 
         self.dragPos = None
 
@@ -431,6 +432,13 @@ class MainWindow(QWidget):
         self.search_box.setContentsMargins(0,0,10,0)
         self.search_box.returnPressed.connect(self.summoner_info)
 
+        self.chat_button = QPushButton("→")
+        self.chat_button.setFixedWidth(50)
+        self.chat_button.setFixedHeight(50)
+        self.chat_button.setObjectName("funcKeys")
+        self.chat_button.setGraphicsEffect(make_shadow())
+        self.chat_button.clicked.connect(self.toggle_chat_panel)
+
         top_bar.addStretch()
         top_bar.addWidget(logo)
         top_bar.addStretch()
@@ -445,6 +453,7 @@ class MainWindow(QWidget):
         top_bar.addWidget(btn_minimized)
         top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
+        top_bar.addWidget(self.chat_button)
         top_bar.setContentsMargins(0,0,40,0)
         
         self.right_column = QVBoxLayout()
@@ -456,7 +465,7 @@ class MainWindow(QWidget):
         self.middle_widget_layout = QVBoxLayout(self.middle_widget)
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.middle_widget_layout.setSpacing(8)
-        self.middle_widget.setFixedSize(600, 700)
+        self.middle_widget.setMaximumSize(600, 700)
 
         
         self.info_holder = QWidget()
@@ -482,13 +491,26 @@ class MainWindow(QWidget):
 
         self.left_column = QVBoxLayout()
         
+        self.chat_panel = QFrame()
+        self.chat_panel.setObjectName("chatPanel")
+        self.chat_panel_layout = QVBoxLayout(self.chat_panel)
+        self.chat_panel_layout.setObjectName("chatPanelLayout")
+        # self.chat_panel_layout.setContentsMargins(10, 0, 0, 0)
+        # self.chat_panel_layout.setSpacing(10)
+
+        self.chat_lbl = QLabel("🌍 World Chat")
+        self.chat_lbl.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.chat_panel_layout.addWidget(self.chat_lbl)
+        
+
         
         self.center_layout = QHBoxLayout()
         self.center_layout.addLayout(self.right_column, stretch=1)
         self.center_layout.addWidget(self.middle_widget, stretch=2)
         self.center_layout.addLayout(self.left_column, stretch=1)
-        self.center_layout.setAlignment(Qt.AlignTop)
         
+        self.center_layout.addWidget(self.chat_panel)
+        self.center_layout.setAlignment(Qt.AlignTop)
 
         self.loading_lbl = QLabel()
         self.loading_lbl.setVisible(False)
@@ -517,6 +539,16 @@ class MainWindow(QWidget):
 
         self.setLayout(main_layout)
 
+
+
+        self.chat_panel.setMinimumWidth(0)
+        self.chat_panel.setMaximumWidth(0)
+        
+        self.chat_animation = QPropertyAnimation(self.chat_panel, b"maximumWidth")
+        self.chat_animation.setDuration(500)
+        self.chat_animation.setEasingCurve(QEasingCurve.InOutCubic)
+        self.chat_open = False
+
         if main_account:
             try:
                 if "#" in main_account:
@@ -527,6 +559,22 @@ class MainWindow(QWidget):
                         load_summoner_layout(self, name, tag, puuid)
             except Exception as e:
                 QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
+
+    def toggle_chat_panel(self):
+        if self.chat_open:
+            self.chat_animation.setStartValue(300)
+            self.chat_animation.setEndValue(0)
+            self.chat_button.setText("→")
+            self.chat_panel.setMinimumWidth(0)
+        else:
+            self.chat_panel.setMinimumWidth(300)
+            self.chat_animation.setStartValue(0)
+            self.chat_animation.setEndValue(300)
+            self.chat_button.setText("←")
+
+        self.chat_animation.start()
+        self.chat_open = not self.chat_open
+
 
     def match_load_finished(self, data):
         
@@ -568,50 +616,6 @@ class MainWindow(QWidget):
         self.loader_thread.finished.connect(self.match_load_finished)
         # self.loader_thread.error.connect(self.on_match_load_error)
         self.loader_thread.start()
-
-        # summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
-        # summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
-        # real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
-
-        # winrate = calculate_winrate(summoners_rank)
-
-        # clearLayout(self.left_column)
-        # clearLayout(self.info_layout)      
-        # clearLayout(self.right_column)
-        # clearLayout(self.matches_layout)
-
-        # match_ids = get_user_match_history(summoner_name, summoner_tag)
-        # matches_data = convert_match_ids(match_ids, summoner_name)
-
-        # pixmap = get_icon(summoners_icon)
-        
-        # vytvoření textu a ikony
-        # text_label = InfoLabel(f"{summoner_name}#{summoner_tag} / Level: {summoners_level}")
-
-        # icon_label = QLabel()
-        # if pixmap:
-        #     pixmap = pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        #     pixmap = round_pixmap(pixmap)
-        #     icon_label.setPixmap(pixmap)
-        #     icon_label.setObjectName("iconLabel")
-
-        
-        # info_widget = QWidget()
-        # info_row = QHBoxLayout()
-        # info_widget.setLayout(info_row)
-        # info_row.addWidget(text_label)
-        # info_row.addWidget(icon_label)
-
-        
-        # self.info_layout.addWidget(info_widget)
-
-        
-
-        
-        
-
-        
-
 
 
     def toggleMaximaze(self):

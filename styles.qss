@@ -138,4 +138,10 @@ QToolTip {
     image: url(ikony/arrow.png);
     
 }
-
+#chatPanel{
+    background-color: #000000ff;
+    border-left: 1px solid #8B5CF6;
+}
+#chatPanelLayout{
+    background-color: #000000ff;
+}
