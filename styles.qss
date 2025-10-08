@@ -145,3 +145,18 @@ QToolTip {
 #chatPanelLayout{
     background-color: #000000ff;
 }
+#chatButton{
+    border: none;
+    background: none;
+}
+#chatLabel{
+    font-size: 20px;
+    border-bottom: 1px solid #8B5CF6;
+}
+#chatMessage{
+    background-color: #2C313C;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    max-width: 250px;
+}

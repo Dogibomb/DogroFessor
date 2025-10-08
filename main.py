@@ -380,15 +380,7 @@ class MainWindow(QWidget):
         btn_minimized.clicked.connect(self.showMinimized)
         btn_minimized.setGraphicsEffect(make_shadow())
 
-        btn_maximaze = QPushButton("▭")
-        btn_maximaze.setFixedWidth(50)
-        btn_maximaze.setFixedHeight(30)
-        btn_maximaze.setObjectName("funcKeys")
-        btn_maximaze.clicked.connect(self.toggleMaximaze)
-        btn_maximaze.setGraphicsEffect(make_shadow())
-
         self.region_box = QComboBox()
-        
         
         self.region_box.addItems([
             "EUNE", "EUW", "KR", "NA", "LAN", "LAS", "OCE", "BR", "TR", "RU", "JP"
@@ -432,12 +424,11 @@ class MainWindow(QWidget):
         self.search_box.setContentsMargins(0,0,10,0)
         self.search_box.returnPressed.connect(self.summoner_info)
 
-        self.chat_button = QPushButton("→")
-        self.chat_button.setFixedWidth(50)
-        self.chat_button.setFixedHeight(50)
-        self.chat_button.setObjectName("funcKeys")
-        self.chat_button.setGraphicsEffect(make_shadow())
-        self.chat_button.clicked.connect(self.toggle_chat_panel)
+        chat_button = QPushButton("→")
+        chat_button.setObjectName("chatButton")
+        chat_button.setGraphicsEffect(make_shadow())
+        chat_button.clicked.connect(lambda: self.toggle_chat_panel(chat_button))
+        
 
         top_bar.addStretch()
         top_bar.addWidget(logo)
@@ -451,9 +442,9 @@ class MainWindow(QWidget):
         top_bar.addWidget(self.region_box)
         top_bar.addWidget(self.search_box)
         top_bar.addWidget(btn_minimized)
-        top_bar.addWidget(btn_maximaze)
         top_bar.addWidget(btn_exit)
-        top_bar.addWidget(self.chat_button)
+        top_bar.addStretch()
+        top_bar.addWidget(chat_button)
         top_bar.setContentsMargins(0,0,40,0)
         
         self.right_column = QVBoxLayout()
@@ -499,8 +490,19 @@ class MainWindow(QWidget):
         # self.chat_panel_layout.setSpacing(10)
 
         self.chat_lbl = QLabel("🌍 World Chat")
+        self.chat_lbl.setObjectName("chatLabel")
+        self.chat_lbl.setFixedHeight(40)
         self.chat_lbl.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
         self.chat_panel_layout.addWidget(self.chat_lbl)
+
+        self.chat_line = QLineEdit()
+        self.chat_line.returnPressed.connect(self.send_message)
+        self.chat_line.setObjectName("chatLine")
+        self.chat_line.setPlaceholderText("Type Anything...")
+        self.chat_line.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
+        self.chat_panel_layout.addStretch()
+        self.chat_panel_layout.addWidget(self.chat_line)
+        
         
 
         
@@ -509,7 +511,8 @@ class MainWindow(QWidget):
         self.center_layout.addWidget(self.middle_widget, stretch=2)
         self.center_layout.addLayout(self.left_column, stretch=1)
         
-        self.center_layout.addWidget(self.chat_panel)
+        self.center_layout.addWidget(self.chat_panel, stretch=1)
+
         self.center_layout.setAlignment(Qt.AlignTop)
 
         self.loading_lbl = QLabel()
@@ -545,8 +548,6 @@ class MainWindow(QWidget):
         self.chat_panel.setMaximumWidth(0)
         
         self.chat_animation = QPropertyAnimation(self.chat_panel, b"maximumWidth")
-        self.chat_animation.setDuration(500)
-        self.chat_animation.setEasingCurve(QEasingCurve.InOutCubic)
         self.chat_open = False
 
         if main_account:
@@ -560,20 +561,43 @@ class MainWindow(QWidget):
             except Exception as e:
                 QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
 
-    def toggle_chat_panel(self):
+    def send_message(self):
+        chat_text = self.chat_line.text().strip()
+        if not chat_text:
+            return
+
+        msg_label = QLabel(f"{self.summ_name}: {chat_text}")
+        msg_label.setWordWrap(True)
+        msg_label.setObjectName("chatMessage")
+        msg_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        msg_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+
+        msg_container = QHBoxLayout()
+        
+        msg_container.addWidget(msg_label)
+        msg_container.setContentsMargins(0, 0, 0, 0)
+
+
+        self.chat_panel_layout.insertLayout(self.chat_panel_layout.count() - 2, msg_container)
+        self.chat_line.clear()
+
+    def toggle_chat_panel(self, chat_button):
+        current_width = self.chat_panel.width()
+
         if self.chat_open:
-            self.chat_animation.setStartValue(300)
+            self.chat_animation.setStartValue(current_width)
             self.chat_animation.setEndValue(0)
-            self.chat_button.setText("→")
-            self.chat_panel.setMinimumWidth(0)
+            chat_button.setText("→")
         else:
-            self.chat_panel.setMinimumWidth(300)
-            self.chat_animation.setStartValue(0)
+            self.chat_panel.setMinimumWidth(0)
+            self.chat_panel.setMaximumWidth(300)
+            self.chat_animation.setStartValue(current_width)
             self.chat_animation.setEndValue(300)
-            self.chat_button.setText("←")
+            chat_button.setText("←")
 
         self.chat_animation.start()
         self.chat_open = not self.chat_open
+
 
 
     def match_load_finished(self, data):
