@@ -11,7 +11,7 @@ from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal, QPropertyAnimat
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush, QMovie
 from urllib.request import urlopen
-from io import BytesIO
+from database import send_message, load_messages, supabase_client
 
 class LoadingIcon(QThread):
     finished = pyqtSignal(dict)
@@ -542,13 +542,14 @@ class MainWindow(QWidget):
 
         self.setLayout(main_layout)
 
-
+        
 
         self.chat_panel.setMinimumWidth(0)
         self.chat_panel.setMaximumWidth(0)
         
         self.chat_animation = QPropertyAnimation(self.chat_panel, b"maximumWidth")
         self.chat_open = False
+
 
         if main_account:
             try:
@@ -566,22 +567,60 @@ class MainWindow(QWidget):
         if not chat_text:
             return
 
-        msg_label = QLabel(f"{self.summ_name}: {chat_text}")
+        send_message(self.summ_name, chat_text)  
+
+       
+        self.chat_line.clear()
+
+    def load_chat_history(self):
+        try:
+            messages = load_messages(limit=50)  
+
+            
+            for i in reversed(range(self.chat_panel_layout.count())):
+                widget = self.chat_panel_layout.itemAt(i).widget()
+                if widget and widget not in [self.chat_lbl, self.chat_line]:
+                    widget.deleteLater()
+
+            
+            for msg in messages:
+                self.display_message(msg["username"], msg["message"])
+
+        except Exception as e:
+            print("Error while loading chat:", e)
+
+    def display_message(self, username, message):
+        msg_label = QLabel(f"{username}: {message}")
         msg_label.setWordWrap(True)
         msg_label.setObjectName("chatMessage")
         msg_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         msg_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        msg_label.setStyleSheet("""
+            QLabel#chatMessage {
+                background-color: #3B3F4A;
+                color: white;
+                padding: 6px 10px;
+                border-radius: 8px;
+                max-width: 250px;
+            }
+        """)
+
+        
+        
 
         msg_container = QHBoxLayout()
-        
         msg_container.addWidget(msg_label)
-        msg_container.setContentsMargins(0, 0, 0, 0)
-
+        msg_container.addStretch()
+        msg_container.setContentsMargins(10, 2, 10, 2)
 
         self.chat_panel_layout.insertLayout(self.chat_panel_layout.count() - 2, msg_container)
-        self.chat_line.clear()
 
     def toggle_chat_panel(self, chat_button):
+
+        self.chat_refresher = QTimer()
+        self.chat_refresher.timeout.connect(self.load_chat_history)
+        self.chat_refresher.start(500)
+
         current_width = self.chat_panel.width()
 
         if self.chat_open:
@@ -598,7 +637,27 @@ class MainWindow(QWidget):
         self.chat_animation.start()
         self.chat_open = not self.chat_open
 
+    
 
+    def load_chat_history(self):
+        try:
+            # pokud ještě nemáme last_message_id, nastavíme 0 (začátek)
+            if not hasattr(self, "last_message_id"):
+                self.last_message_id = 0
+
+            
+            messages = load_messages(limit=10)
+
+            messages = messages[::-1]  # reverzní pořadí, aby nejnovější byly na konci
+
+            for msg in messages:
+                # pokud zpráva je novější než poslední zobrazená, zobraz ji
+                if msg["id"] > self.last_message_id:
+                    self.display_message(msg["username"], msg["message"])
+                    self.last_message_id = msg["id"]
+
+        except Exception as e:
+            print("❌ Error loading chat:", e)
 
     def match_load_finished(self, data):
         
