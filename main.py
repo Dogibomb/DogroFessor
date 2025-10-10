@@ -7,7 +7,7 @@ from config import *
 from load_summoner import load_summoner_layout
 import sys                
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog, QMenu
-from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve
+from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve, QDateTime
 from PyQt5.QtWidgets import QDialog
 from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush, QMovie
 from urllib.request import urlopen
@@ -128,129 +128,6 @@ class ToolTipStyle(QProxyStyle):
             return 1  
         return super().styleHint(hint, option, widget, returnData)
 
-class MatchWidget(QWidget):
-    def __init__(self, team1_icons, team2_icons, duration, name, kda, items, item_names):
-        super().__init__()
-        self.setObjectName("matchWidget")
-
-        
-
-        def make_team_layout(icons):
-            vbox = QVBoxLayout()
-            vbox.setSpacing(0)
-            vbox.setContentsMargins(0,0,0,0)
-            row_layout = None
-            my_icon_champ = None
-            for i, player in enumerate(icons):
-                if i % 5 == 0:
-                    row_layout = QHBoxLayout()
-                    row_layout.setSpacing(0)
-                    vbox.addLayout(row_layout)
-                pix = QPixmap(resource_path(player["icon"]))
-                pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                lbl = QLabel()
-                lbl.setPixmap(pix)
-                
-               
-                lbl.setToolTip(player["name"])
-                lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-                
-                if player["name"].lower() == name.lower():
-                    lbl.setStyleSheet("border: 2px solid limegreen; border-radius: 5px;")
-                    my_icon_champ = player["icon"]
-                
-                row_layout.addWidget(lbl)
-            return vbox, my_icon_champ
-        
-        def make_item_layout(items):
-            vbox = QVBoxLayout()
-            vbox.setSpacing(0)
-            vbox.setContentsMargins(0,0,0,0)
-            row_layout = None
-            for i, item_name in enumerate(items):
-                if i % 4 == 0:
-                    row_layout = QHBoxLayout()
-                    row_layout.setSpacing(0)
-                    vbox.addLayout(row_layout)
-                pix = QPixmap(resource_path(f"items_icons/{item_name}"))
-                pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                lbl = QLabel()
-                lbl.setPixmap(pix)
-                lbl.setToolTip(item_names[i])
-                lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
-                
-                row_layout.addWidget(lbl)
-            return vbox
-
-        team1_layout, champ1_icon = make_team_layout(team1_icons)
-        team2_layout, champ2_icon = make_team_layout(team2_icons)
-
-        team_container_layout = QVBoxLayout()
-        team_container_layout.setContentsMargins(0,0,0,0)
-        team_container_layout.setSpacing(0)
-        team_container_layout.addLayout(team1_layout)
-        team_container_layout.addLayout(team2_layout)
-
-        teams_container = QWidget()
-        teams_container.setLayout(team_container_layout)
-
-        champ_info = QVBoxLayout()
-        champ_info.setAlignment(Qt.AlignCenter)
-
-        my_icon_champ = champ1_icon or champ2_icon
-        
-        kda_stat = QLabel(kda) 
-
-        if my_icon_champ:
-            pix = QPixmap(my_icon_champ).scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation) 
-            champ_label = QLabel() 
-            
-            champ_label.setPixmap(pix) 
-            champ_info.addWidget(champ_label, alignment=Qt.AlignCenter)
-
-        duration = QLabel(f"Game Duration: {duration}")
-        
-        champ_widget = QWidget()
-        champ_widget.setLayout(champ_info)
-
-        left_layout = QVBoxLayout()
-        left_layout.addWidget(teams_container, alignment=Qt.AlignLeft)
-        
-        middle_layout = QVBoxLayout()
-        middle_layout.addWidget(duration, alignment=Qt.AlignCenter)
-        middle_layout.addWidget(champ_widget, alignment=Qt.AlignCenter)
-        champ_info.addWidget(kda_stat, alignment=Qt.AlignCenter)
-
-        item_layout = make_item_layout(items)
-        right_layout = QVBoxLayout()
-        right_layout.setContentsMargins(20,0,0,0)
-        right_layout.addLayout(item_layout)
-
-        left_middle_right = QHBoxLayout()
-        left_middle_right.setContentsMargins(0,0,20,0)
-        left_middle_right.setSpacing(0)
-        left_middle_right.addLayout(left_layout)
-        left_middle_right.addLayout(middle_layout)
-        left_middle_right.addLayout(right_layout)
-
-        main_layout = QVBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
-        main_layout.setSpacing(0)
-        
-        main_layout.addLayout(left_middle_right)
-        
-        
-        
-
-        line = QFrame()
-        line.setObjectName("Line")
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        
-        main_layout.addWidget(line)
-    
-        self.setLayout(main_layout)
-
 def resource_path(relative_path):
     import sys, os
     try:
@@ -352,11 +229,12 @@ class MainWindow(QWidget):
         btn_profile = QPushButton("Profil")
         btn_profile.setFixedWidth(150)
         btn_profile.setGraphicsEffect(make_shadow())
+        btn_profile.clicked.connect(lambda: self.profile(main_account))
 
         btn_free_champions = QPushButton("Free champs")
         btn_free_champions.setFixedWidth(150)
         btn_free_champions.setGraphicsEffect(make_shadow())
-        btn_free_champions.clicked.connect(self.free_champs)
+        
 
         btn_convert_puuid = QPushButton("Find Group")
         btn_convert_puuid.setFixedWidth(150)
@@ -478,29 +356,28 @@ class MainWindow(QWidget):
         self.scroll_area.setWidget(self.scroll_content)
         self.middle_widget_layout.addWidget(self.scroll_area)
 
-        
-
         self.left_column = QVBoxLayout()
-        
+
         self.chat_panel = QFrame()
         self.chat_panel.setObjectName("chatPanel")
+
+
+
+        self.chat_scroll_area = QScrollArea()
+        self.chat_scroll_area.setWidgetResizable(True)
+        self.chat_scroll_area.setObjectName("chatScrollArea")
+
+        self.chat_scroll_content = QWidget()
+        self.chat_scroll_layout = QVBoxLayout(self.chat_scroll_content)
+        self.chat_scroll_layout.setAlignment(Qt.AlignTop)
+        self.chat_scroll_area.setWidget(self.chat_scroll_content)
+
         self.chat_panel_layout = QVBoxLayout(self.chat_panel)
-        self.chat_panel_layout.setObjectName("chatPanelLayout")
-        # self.chat_panel_layout.setContentsMargins(10, 0, 0, 0)
-        # self.chat_panel_layout.setSpacing(10)
-
-        self.chat_lbl = QLabel("🌍 World Chat")
-        self.chat_lbl.setObjectName("chatLabel")
-        self.chat_lbl.setFixedHeight(40)
-        self.chat_lbl.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
-        self.chat_panel_layout.addWidget(self.chat_lbl)
-
+        self.chat_panel_layout.addWidget(QLabel("🌍 World Chat", alignment=Qt.AlignCenter))
+        self.chat_panel_layout.addWidget(self.chat_scroll_area)
         self.chat_line = QLineEdit()
-        self.chat_line.returnPressed.connect(self.send_message)
-        self.chat_line.setObjectName("chatLine")
         self.chat_line.setPlaceholderText("Type Anything...")
-        self.chat_line.setAlignment(Qt.AlignBottom | Qt.AlignLeft)
-        self.chat_panel_layout.addStretch()
+        self.chat_line.returnPressed.connect(lambda: self.send_message(main_account_for_chat))
         self.chat_panel_layout.addWidget(self.chat_line)
         
         
@@ -558,16 +435,17 @@ class MainWindow(QWidget):
                     puuid = get_puuid(name, tag)
                     if puuid:
                         self.summ_name = main_account
-                        load_summoner_layout(self, name, tag, puuid)
+                        main_account_for_chat = main_account
+                        load_summoner_layout(self, puuid)
             except Exception as e:
                 QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
 
-    def send_message(self):
+    def send_message(self, account):
         chat_text = self.chat_line.text().strip()
         if not chat_text:
             return
 
-        send_message(self.summ_name, chat_text)  
+        send_message(account, chat_text)
 
        
         self.chat_line.clear()
@@ -589,31 +467,17 @@ class MainWindow(QWidget):
         except Exception as e:
             print("Error while loading chat:", e)
 
-    def display_message(self, username, message):
-        msg_label = QLabel(f"{username}: {message}")
+    def display_message(self, main_account_for_chat, message):
+        msg_label = QLabel(f"<span style=\"font-weight: bold; color: #A78BFA; padding: 2px;\">{main_account_for_chat}</span> {QDateTime.currentDateTime().toString('hh:mm')} <br>{message}")
         msg_label.setWordWrap(True)
         msg_label.setObjectName("chatMessage")
         msg_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         msg_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
-        msg_label.setStyleSheet("""
-            QLabel#chatMessage {
-                background-color: #3B3F4A;
-                color: white;
-                padding: 6px 10px;
-                border-radius: 8px;
-                max-width: 250px;
-            }
-        """)
 
-        
-        
+        self.chat_scroll_layout.addWidget(msg_label)
 
-        msg_container = QHBoxLayout()
-        msg_container.addWidget(msg_label)
-        msg_container.addStretch()
-        msg_container.setContentsMargins(10, 2, 10, 2)
-
-        self.chat_panel_layout.insertLayout(self.chat_panel_layout.count() - 2, msg_container)
+        scroll_bar = self.chat_scroll_area.verticalScrollBar()
+        scroll_bar.setValue(scroll_bar.maximum())
 
     def toggle_chat_panel(self, chat_button):
 
@@ -664,15 +528,21 @@ class MainWindow(QWidget):
         self.loading_icon.stop()
         self.loading_lbl.setVisible(False)
 
-        
-        load_summoner_layout(self, data["summoner_name"], data["summoner_tag"], get_puuid(data["summoner_name"], data["summoner_tag"]))
+
+        load_summoner_layout(self, get_puuid(data["summoner_name"], data["summoner_tag"]))
 
     def set_region(self, region):
         self.selected_region = region
 
-    def free_champs(self):
-        pass
-        # get_free_champions()
+    def profile(self, main_account):
+        if "#" not in main_account:
+            QMessageBox.warning(self, "Warning", "Invalid main account format")
+            return
+
+        name, tag = main_account.split("#", 1)
+        self.summ_name = main_account  
+        puuid = get_puuid(name, tag)
+        load_summoner_layout(self, puuid)
 
     # vypisuje summoners info to vyhledevani basicly
     def summoner_info(self):

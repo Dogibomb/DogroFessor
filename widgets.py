@@ -12,7 +12,7 @@ class MatchWidget(QWidget):
     def __init__(self, team1_icons, team2_icons, duration, name, kda, items, item_names):
         super().__init__()
         self.setObjectName("matchWidget")
-
+        
         
 
         def make_team_layout(icons):

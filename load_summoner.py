@@ -6,13 +6,14 @@ from PyQt5.QtWidgets import QLabel, QVBoxLayout, QHBoxLayout, QWidget, QMessageB
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
 
-def load_summoner_layout(self, name, tag, puuid):
+def load_summoner_layout(self, puuid):
     summoner_name, summoner_tag = get_champions_info_by_puuid_without_input(puuid)
     summoners_icon, summoners_level, summoners_rank = get_summoners_level(puuid, self.selected_region)
     real_flex_rank, real_solo_duo_rank, lp_flex, lp_solo, wins_flex, wins_solo, losses_flex, losses_solo = get_real_ranks(summoners_rank)
 
     winrate = calculate_winrate(summoners_rank)
 
+    clearLayout(self.matches_layout)
     clearLayout(self.left_column)
     clearLayout(self.info_layout)      
     clearLayout(self.right_column)
@@ -47,6 +48,8 @@ def load_summoner_layout(self, name, tag, puuid):
     match_ids = get_user_match_history(summoner_name, summoner_tag)
     matches_data = convert_match_ids(match_ids, summoner_name)        
 
+
+
     for m in matches_data:
         
         team1_champs = [
@@ -56,7 +59,6 @@ def load_summoner_layout(self, name, tag, puuid):
         team2_champs = [
             {"icon": resource_path(f"icons/{p['champion']}.png"), "name": p["name"]}
             for p in m["team2"]]
-        
         my_item_ids = m['items']
         
         duration = f"{m['duration']} min"
@@ -66,9 +68,11 @@ def load_summoner_layout(self, name, tag, puuid):
         item_names = convert_item_ids(my_item_ids)
 
         match_widget = MatchWidget(team1_champs, team2_champs, duration, self.summ_name, kda, my_item_ids, item_names)
-        
+
+
         self.matches_layout.addWidget(match_widget)
-    
+
+
     #soloque     
     solo_container = QHBoxLayout()
     solo_container.setAlignment(Qt.AlignTop)

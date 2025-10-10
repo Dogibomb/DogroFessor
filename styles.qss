@@ -158,5 +158,5 @@ QToolTip {
     color: white;
     padding: 6px 10px;
     border-radius: 8px;
-    max-width: 250px;
+    max-width: 500px;
 }
