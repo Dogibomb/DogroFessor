@@ -98,11 +98,11 @@ def load_summoner_layout(self, puuid):
     
 
     solo_info_layout = QVBoxLayout()
-    
-    solo_info_layout.addWidget(QLabel(f"{real_solo_duo_rank}"))
+
+    solo_info_layout.addWidget(QLabel(f"<span style='font-weight: bold;'>{real_solo_duo_rank}</span>"))
     solo_info_layout.addWidget(QLabel(f"LP: {lp_solo}"))
-    solo_info_layout.addWidget(QLabel(f"Wins: {wins_solo}"))
-    solo_info_layout.addWidget(QLabel(f"Losses: {losses_solo}"))
+    solo_info_layout.addWidget(QLabel(f"<span style='color: #00FF66;'>Wins: {wins_solo}</span>"))
+    solo_info_layout.addWidget(QLabel(f"<span style='color: #FF3333;'>Losses: {losses_solo}</span>"))
     solo_info_layout.addWidget(QLabel(f"Winrate: {winrate_solo}%"))
 
     solo_container.addWidget(logosolo)
@@ -137,10 +137,10 @@ def load_summoner_layout(self, puuid):
 
     flex_info_layout = QVBoxLayout()
     flex_container.setContentsMargins(0,0,0,0)
-    flex_info_layout.addWidget(QLabel(f"{real_flex_rank}"))
+    flex_info_layout.addWidget(QLabel(f"<span style='font-weight: bold;'>{real_flex_rank}</span>"))
     flex_info_layout.addWidget(QLabel(f"LP: {lp_flex}"))
-    flex_info_layout.addWidget(QLabel(f"Wins: {wins_flex}"))
-    flex_info_layout.addWidget(QLabel(f"Losses: {losses_flex}"))
+    flex_info_layout.addWidget(QLabel(f"<span style='color: #00FF66; '>Wins: {wins_flex}</span>"))
+    flex_info_layout.addWidget(QLabel(f"<span style='color: #FF3333; '>Losses: {losses_flex}</span>"))
     flex_info_layout.addWidget(QLabel(f"Winrate: {winrate_flex}%"))
     
     flex_container.addWidget(logoflex)
