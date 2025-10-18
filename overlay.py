@@ -9,6 +9,8 @@ import urllib3
 import requests
 from user import get_summoners_level, get_puuid, get_real_ranks, check_what_rank
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from openai import OpenAI
+from api_key import API_KEY_OPENAI
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -18,6 +20,7 @@ def fetch_player_data(player):
             champ_name = player["championName"]
             summonername = player["summonerName"]
             team = player["team"]
+            lane = player.get("position", "UNKNOWN")
 
             if not name or not tag or "Bot" in summonername:
                 return {
@@ -26,7 +29,8 @@ def fetch_player_data(player):
                     "team": team,
                     "champ": champ_name,
                     "summname": summonername,
-                    "rank": "BOT"
+                    "rank": "BOT",
+                    "lane": lane
                 }
 
             puuid = get_puuid(name, tag)
@@ -37,7 +41,8 @@ def fetch_player_data(player):
                     "team": team,
                     "champ": champ_name,
                     "summname": summonername,
-                    "rank": "UNRANKED"
+                    "rank": "UNRANKED",
+                    "lane": lane
                 }
             
             result = get_summoners_level(puuid, region="EUNE")
@@ -48,7 +53,8 @@ def fetch_player_data(player):
                     "team": team,
                     "champ": champ_name,
                     "summname": summonername,
-                    "rank": "UNRANKED"
+                    "rank": "UNRANKED",
+                    "lane": lane
                 }
             
             icon, level, rank = result
@@ -61,7 +67,8 @@ def fetch_player_data(player):
                 "team": team,
                 "champ": champ_name,
                 "summname": summonername,
-                "rank": real_solo_duo_rank
+                "rank": real_solo_duo_rank,
+                "lane": lane
             }
 
 def get_realtime_data():
@@ -76,7 +83,7 @@ def get_realtime_data():
         return None
 
 CHAMPION_ALIASES = {
-    "monkeyking": "wukong",
+    "wukong": "monkeyking",
     "renataglasc": "renata",
     "nunuwillump": "nunu",
     "belveth": "belveth",
@@ -102,6 +109,8 @@ def rename_champs(champ_name):
 
     return CHAMPION_ALIASES.get(clean, clean)
 
+responses_cache = {}
+
 class Overlay(QWidget):
     def __init__(self):
         super().__init__()
@@ -123,25 +132,109 @@ class Overlay(QWidget):
 
         redside = QVBoxLayout()
         blueside = QVBoxLayout()
-        
         players = data["allPlayers"]
 
         # vytvoř pool s 8 vlákny
         with ThreadPoolExecutor(max_workers=8) as executor:
             futures = [executor.submit(fetch_player_data, p) for p in players]
-            results = [f.result() for f in as_completed(futures)]
+            results = [f.result() for f in futures]
+
+        def find_opponent(player):
+            if player["lane"] == "UNKNOWN":
+                return None
+            opposite_team = blue_team if player["team"] == "CHAOS" else red_team
+            for opp in opposite_team:
+                if opp["lane"] == player["lane"]:
+                    return opp["champ"]
+            return None
+
+        red_team = [p for p in results if p["team"] == "CHAOS"]
+        blue_team = [p for p in results if p["team"] == "ORDER"]
+
+        local_player = data.get("activePlayer", {}).get("summonerName", None)
+        active_data = next((p for p in results if p["summname"] == local_player), None)
+        team = active_data["team"]
+        active_lane = active_data["lane"]
+        active_champ = rename_champs(active_data["champ"])
+        opponent = find_opponent(active_data)
+
+        latest_patch = "25.20"
+        matchup_key = f"{active_champ}_vs_{opponent}"
+
+        if matchup_key in responses_cache:
+            response_text = responses_cache[matchup_key]
+        else:
+            client = OpenAI(api_key=API_KEY_OPENAI)
+            prompt = f"""
+                You are an **expert League of Legends coach**. Produce a **lane-specific guide** in **plain text**. 
+                Do NOT use JSON. Make it clear and readable for a human player.
+
+                INPUT VARIABLES:
+                - Champion: {active_champ}
+                - Opponent: {opponent or "unknown"}
+                - Patch: {latest_patch}
+
+                REQUIREMENTS:
+                1. Include sections: Build, Runes, Skill Order, Power Spikes, Matchup Notes, Counterplay Tips.
+                2. Keep it concise, 150-250 words.
+                3. Provide actionable tips for early, mid, and late game.
+                4. If opponent is unknown, produce a generic lane guide.
+                5. Use standard champion names (e.g., "Wukong", "Renata").
+
+                FORMAT EXAMPLE:
+
+                Champion: Darius
+                Opponent: Garen
+
+                Build:
+                - Starting items: Doran's Blade, Health Potion
+                - Core items: Stridebreaker, Sterak's Gage, Black Cleaver
+                - Boots: Plated Steelcaps
+                - Optional items: Death's Dance, Guardian Angel
+
+                Runes: Primary: Conqueror, Secondary: Resolve, Shards: Attack Speed, Adaptive Force, Armor
+
+                Skill Order: Q > E > W > Q > Q > R ...
+
+                Power Spikes: Level 3 (Q+E), Level 6 (Ultimate), After completing Stridebreaker
+
+                Matchup Notes: Avoid extended trades early, Garen can all-in if he gets level advantage.
+
+                Counterplay Tips: Don't overextend, bait Garen into tower, dodge his Q, track jungle pressure.
+
+                Now produce a guide for Champion: {active_champ}, Opponent: {opponent or "unknown"}, Lane: {active_lane}, Patch: {latest_patch}.
+                """
+            response = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": "You are a professional LoL coach."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_completion_tokens=800,
+            )
+
+            response_text = response.choices[0].message.content
+            responses_cache[matchup_key] = response_text
+            
+        guidelbl = QLabel(response_text)
+        guidelbl.setFixedHeight(600)
+        guidelbl.setFixedWidth(650)
+        guidelbl.setObjectName("guide")
+        guidelbl.setWordWrap(True)
 
         try:
             for player_data in results:
                 if not player_data:
                     continue
                 
+                
+
                 team = player_data["team"]
                 champ_name = rename_champs(player_data["champ"])
+                lane = player_data["lane"]
                 summonername = player_data["summname"]
                 rank_name = player_data["rank"]
-                
-                print(champ_name)
+                opponent = find_opponent(player_data)
 
                 icon_path = (resource_path(f"icons/{champ_name}.png"))
                 pixlbl = QLabel()
@@ -168,10 +261,11 @@ class Overlay(QWidget):
                 summonernamelbl.setFixedWidth(150)
                 summonernamelbl.setObjectName("summname")
                 summonernamelbl.setAlignment(Qt.AlignCenter)
-
+                
                 info = QVBoxLayout()
                 info.addWidget(summonernamelbl)
                 info.addWidget(ranklbl)
+                
                 info.setContentsMargins(0, 0, 0, 0)
 
                 player_row = QHBoxLayout()
@@ -197,6 +291,10 @@ class Overlay(QWidget):
 
         main_layout.addLayout(blueside)
         main_layout.addStretch(1)
+        main_layout.addWidget(guidelbl)
+        main_layout.addStretch(1)
         main_layout.addLayout(redside)
 
         self.setLayout(main_layout)
+
+    

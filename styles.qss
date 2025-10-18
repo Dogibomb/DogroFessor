@@ -167,12 +167,16 @@ QToolTip {
     background-color: #20232A;
     font-size: 16px;
     color: white;
-    border: 1px solid #8B5CF6;
+    
 }
 #playerrow{
     background-color: #2C313C;
-    border: 1px solid #8B5CF6;
+    
 }
 #rank{
-    border: 1px solid #8B5CF6;
+    
+}
+#guide{
+    font-size: 13px;
+    
 }

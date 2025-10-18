@@ -170,7 +170,7 @@ class MainWindow(QWidget):
         btn_profile.setGraphicsEffect(make_shadow())
         btn_profile.clicked.connect(lambda: self.profile(main_account))
 
-        btn_free_champions = QPushButton("Free champs")
+        btn_free_champions = QPushButton("Free champs") 
         btn_free_champions.setFixedWidth(150)
         btn_free_champions.setGraphicsEffect(make_shadow())
         
