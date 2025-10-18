@@ -6,12 +6,16 @@ from match_history import convert_item_ids, get_user_normal_match_history, get_u
 from config import *
 from load_summoner import load_summoner_layout
 import sys                
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QGridLayout, QSplitter, QMessageBox, QComboBox, QGraphicsDropShadowEffect, QScrollArea, QSizePolicy, QFrame, QProxyStyle, QStyle, QInputDialog, QMenu
-from PyQt5.QtCore import Qt, QSize, QTimer, QThread, pyqtSignal, QPropertyAnimation, QEasingCurve, QDateTime
-from PyQt5.QtWidgets import QDialog
-from PyQt5.QtGui import QPixmap, QIcon, QColor, QPainterPath, QPainter, QBrush, QMovie
+from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout, QLineEdit, QMessageBox, QComboBox, QScrollArea, QSizePolicy, QFrame, QMenu
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QPropertyAnimation, QDateTime
+from PyQt5.QtWidgets import QDialog, QShortcut
+from PyQt5.QtGui import QPixmap, QIcon, QMovie, QKeySequence
 from urllib.request import urlopen
 from database import send_message, load_messages, supabase_client
+from organization import *
+from overlay import Overlay
+import keyboard
+import threading
 
 class LoadingIcon(QThread):
     finished = pyqtSignal(dict)
@@ -58,7 +62,6 @@ class LoadingIcon(QThread):
             self.finished.emit(data)
         except Exception as e:
             self.error.emit(str(e))
-
 
 class CustomInputDialog(QDialog):
     def __init__(self, title, label_text, parent=None):
@@ -121,70 +124,6 @@ class InfoLabel(QLabel):
         self.setAlignment(Qt.AlignCenter)
         self.setFixedWidth(500)
         self.setFixedHeight(37)
-
-class ToolTipStyle(QProxyStyle):
-    def styleHint(self, hint, option=None, widget=None, returnData=None):
-        if hint == QStyle.SH_ToolTip_WakeUpDelay:
-            return 1  
-        return super().styleHint(hint, option, widget, returnData)
-
-def resource_path(relative_path):
-    import sys, os
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-def make_shadow():
-    shadow = QGraphicsDropShadowEffect()
-    shadow.setBlurRadius(15)       # jak moc je rozmazaný
-    shadow.setXOffset(2)           # posun X
-    shadow.setYOffset(2)           # posun Y
-    shadow.setColor(QColor(0, 0, 0, 180))  # barva stínu
-    return shadow
-
-def round_pixmap(pixmap):
-    size = min(pixmap.width(), pixmap.height())
-    rounded = QPixmap(size, size)
-    rounded.fill(Qt.transparent)
-
-    painter = QPainter(rounded)
-    painter.setRenderHint(QPainter.Antialiasing)
-    
-    path = QPainterPath()
-    path.addEllipse(0, 0, size, size)  # vytvoří kruh
-    painter.setClipPath(path)
-    
-    # Nakreslí originální pixmapu do kruhu
-    painter.drawPixmap(0, 0, size, size, pixmap)
-    painter.end()
-    
-    return rounded    
-    
-def standardize_icon(pixmap, size=300):
-    canvas = QPixmap(size, size)
-    canvas.fill(Qt.transparent)  # průhledné pozadí
-
-    scaled = pixmap.scaled(size, size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-
-    painter = QPainter(canvas)
-    x = (size - scaled.width()) // 2
-    y = (size - scaled.height()) // 2
-    painter.drawPixmap(x, y, scaled)
-    painter.end()
-
-    return canvas
-
-def clearLayout(layout):
-    while layout.count():
-        item = layout.takeAt(0)
-        widget = item.widget()
-        if widget is not None:
-            widget.deleteLater()
-        else:
-            clearLayout(item.layout())
 
 class MainWindow(QWidget):
     def __init__(self, main_account=None):
@@ -440,6 +379,27 @@ class MainWindow(QWidget):
             except Exception as e:
                 QMessageBox.warning(self, "Warning", f"Failed to load main account: {e}")
 
+
+        self.overlay_window = None
+        threading.Thread(target=self.hotkey, daemon=True).start()
+
+    
+    def hotkey(self):
+        keyboard.add_hotkey("ctrl+y", lambda: self.toggle_overlay())
+        keyboard.wait()
+
+    def toggle_overlay(self):
+        QTimer.singleShot(0, self._toggle_overlay_ui)
+
+    def _toggle_overlay_ui(self):
+        if self.overlay_window and self.overlay_window.isVisible():
+            self.overlay_window.close()
+            self.overlay_window = None
+        else:
+            self.overlay_window = Overlay()
+            self.overlay_window.show()
+
+
     def send_message(self, account):
         chat_text = self.chat_line.text().strip()
         if not chat_text:
@@ -591,9 +551,6 @@ class MainWindow(QWidget):
         if event.button() == Qt.LeftButton:
             self.dragPos = None
 
-
-
-
 app = QApplication(sys.argv)
 app.setStyle(ToolTipStyle())
 icon = QIcon(resource_path("logo.png"))
@@ -604,7 +561,5 @@ main_account = get_mainAcc()
 window = MainWindow(main_account)
 window.setWindowFlag(Qt.FramelessWindowHint)
 window.show()
-
-
 
 sys.exit(app.exec_())

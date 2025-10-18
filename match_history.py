@@ -4,6 +4,7 @@ import time
 from user import get_puuid, get_champions_info_by_puuid_without_input, get_summoners_level
 from cache import *
 
+
 def get_user_normal_match_history():
     puuid = get_puuid()
     api_url_normal_matches = "https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/" + puuid + "/ids?type=normal&start=0&count=5"

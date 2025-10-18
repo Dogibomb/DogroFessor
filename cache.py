@@ -3,7 +3,7 @@ import os
 import time
 
 cache_file = "cache.json"
-cache_time = 600
+cache_time = 86400
 
 def load_cache():
     if not os.path.exists(cache_file):

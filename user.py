@@ -24,7 +24,7 @@ def get_summoners_level(puuid, region):
         region = "oc1"
     if region == "tr":
         region = "tr1"
-    if region == "JP":
+    if region == "jp":
         region = "jp1"
 
     key = f"summoner_{puuid}_{region}"
@@ -36,27 +36,46 @@ def get_summoners_level(puuid, region):
     api_url1 = api_url1 + '?api_key=' + API_KEY
     api_url2 = f"https://{region}.api.riotgames.com/lol/league/v4/entries/by-puuid/" + puuid
     api_url2 = api_url2 + '?api_key=' + API_KEY
-    response_rank = requests.get(api_url2)
-    response_level = requests.get(api_url1)
+    
+    try:
+        response_rank = requests.get(api_url2)
+        response_level = requests.get(api_url1)
 
-    if response_level.status_code != 200:
-        print("Error:", response_level.json()["status"]["status_code"])
-        return "None"
+        if response_level.status_code != 200:
+            data = response_level.json()
+            if "status" in data and "status_code" in data["status"]:
+                print("Error:", data["status"]["status_code"])
+            else:
+                print("Error:", response_level.status_code)
+            return None
 
-    if response_rank.status_code != 200:
-        print("Error:", response_rank.json()["status"]["status_code"])
-        return "None"
+        if response_rank.status_code != 200:
+            print("Error:", response_rank.json()["status"]["status_code"])
+            return (response_level.json().get('profileIconId', 0),
+                    response_level.json().get('summonerLevel', 0),
+                    [])
 
-    summoners_icon = str(response_level.json()['profileIconId'])
-    summoners_level = str(response_level.json()['summonerLevel'])
-    summoners_rank = response_rank.json()
+        data_level = response_level.json()
+        data_rank = response_rank.json()
 
-    set_to_cache(key, {
-        "icon": summoners_icon,
-        "level": summoners_level,
-        "rank": summoners_rank,
-    })
+        if "status" in data_level or "status" in data_rank:
+            print(f"[API ERROR] get_summoners_level: {data_level.get('status', data_rank.get('status'))}")
+            return None
 
+        summoners_icon = str(response_level.json()['profileIconId'])
+        summoners_level = str(response_level.json()['summonerLevel'])
+        summoners_rank = response_rank.json()
+
+        set_to_cache(key, {
+            "icon": summoners_icon,
+            "level": summoners_level,
+            "rank": summoners_rank,
+        })
+
+    except Exception as e:
+        print(f"[ERROR] get_summoners_level failed: {e}")
+        return None
+    
     return summoners_icon, summoners_level, summoners_rank
 
 def calculate_winrate(summoners_rank):
