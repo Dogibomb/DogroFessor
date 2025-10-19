@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QShortcut, QHBoxLayout
 from PyQt5.QtGui import QKeySequence, QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QMetaObject, Q_ARG
 from imports import resource_path, standardize_icon
 from organization import make_shadow
 import urllib3
@@ -109,6 +109,98 @@ def rename_champs(champ_name):
 
     return CHAMPION_ALIASES.get(clean, clean)
 
+
+def search_build(champion_name: str):
+    champ = champion_name.lower().replace(" ", "")
+    try:
+        url = f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/{champ}.json"
+        res = requests.get(url)
+        if res.status_code != 200:
+            return f"⚠️ Build info for {champion_name} not found on CommunityDragon."
+
+        data = res.json()
+        spells = [s["name"] for s in data["spells"]]
+        passive = data["passive"]["name"]
+        title = data["title"]
+
+        build_text = f"""
+            ==============================
+            META BUILD INFORMATION
+            ==============================
+            Champion: {data['name']} - {title}
+            Passive: {passive}
+            Spells: {', '.join(spells)}
+
+            Recommended Items:
+            - Start: Doran's Blade, Health Potion
+            - Core: Mythic depending on lane (e.g. Stridebreaker, Liandry’s, Eclipse)
+            - Boots: Plated Steelcaps or Mercury’s Treads
+            - Situational: Guardian Angel, Death’s Dance, Thornmail, etc.
+            ==============================
+            """
+        return build_text
+    except Exception as e:
+        return f"Error fetching build data: {e}"
+    
+
+def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
+    """
+    Fetches meta build info (via CommunityDragon)
+    + adds AI-generated coaching guide via OpenAI.
+    """
+    client = OpenAI(api_key=API_KEY_OPENAI)
+
+    # ---- Fetch build info first ----
+    build_info = search_build(active_champ)
+
+    # ---- Build the AI prompt ----
+    prompt = f"""
+        You are an **elite League of Legends coach**. Create a concise, actionable **lane-specific guide** for the following:
+
+        Champion: {active_champ}
+        Opponent: {opponent or "unknown"}
+        Lane: {active_lane}
+        Patch: {latest_patch}
+
+        Include these sections clearly:
+        1. Build (based on current meta)
+        2. Skill Order
+        3. Power Spikes
+        4. Matchup Notes
+        5. Counterplay Tips
+
+        Rules:
+        - Max 250 words.
+        - No JSON or bullet lists without context.
+        - Use short, natural sentences.
+        - Give real matchup insights (cooldowns, spikes, trading tips).
+
+        Example Style:
+        "At level 3, use your Q-E combo to punish short trades. Hold W for disengage if the jungler is nearby."
+
+        Now produce the guide.
+        """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a professional League of Legends coach with deep meta knowledge."},
+                {"role": "user", "content": prompt}
+            ],
+            max_completion_tokens=600,
+        )
+
+        ai_text = response.choices[0].message.content.strip()
+
+        # Combine both build info + AI text
+        final_output = f"{build_info}\n\n{ai_text}"
+        return final_output
+
+    except Exception as e:
+        # If OpenAI fails, return only build info
+        return f"{build_info}\n\n⚠️ AI guide generation failed: {e}"
+
 responses_cache = {}
 
 class Overlay(QWidget):
@@ -125,7 +217,7 @@ class Overlay(QWidget):
         with open(resource_path("styles.qss"), "r") as f:
             self.setStyleSheet(f.read())
 
-        self.setFixedSize(1200, 600)
+        self.setFixedSize(1300, 700)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
 
         main_layout = QHBoxLayout(self)
@@ -161,67 +253,41 @@ class Overlay(QWidget):
         latest_patch = "25.20"
         matchup_key = f"{active_champ}_vs_{opponent}"
 
-        if matchup_key in responses_cache:
-            response_text = responses_cache[matchup_key]
-        else:
-            client = OpenAI(api_key=API_KEY_OPENAI)
-            prompt = f"""
-                You are an **expert League of Legends coach**. Produce a **lane-specific guide** in **plain text**. 
-                Do NOT use JSON. Make it clear and readable for a human player.
+        self.executor = ThreadPoolExecutor(max_workers=2)
 
-                INPUT VARIABLES:
-                - Champion: {active_champ}
-                - Opponent: {opponent or "unknown"}
-                - Patch: {latest_patch}
-
-                REQUIREMENTS:
-                1. Include sections: Build, Runes, Skill Order, Power Spikes, Matchup Notes, Counterplay Tips.
-                2. Keep it concise, 150-250 words.
-                3. Provide actionable tips for early, mid, and late game.
-                4. If opponent is unknown, produce a generic lane guide.
-                5. Use standard champion names (e.g., "Wukong", "Renata").
-
-                FORMAT EXAMPLE:
-
-                Champion: Darius
-                Opponent: Garen
-
-                Build:
-                - Starting items: Doran's Blade, Health Potion
-                - Core items: Stridebreaker, Sterak's Gage, Black Cleaver
-                - Boots: Plated Steelcaps
-                - Optional items: Death's Dance, Guardian Angel
-
-                Runes: Primary: Conqueror, Secondary: Resolve, Shards: Attack Speed, Adaptive Force, Armor
-
-                Skill Order: Q > E > W > Q > Q > R ...
-
-                Power Spikes: Level 3 (Q+E), Level 6 (Ultimate), After completing Stridebreaker
-
-                Matchup Notes: Avoid extended trades early, Garen can all-in if he gets level advantage.
-
-                Counterplay Tips: Don't overextend, bait Garen into tower, dodge his Q, track jungle pressure.
-
-                Now produce a guide for Champion: {active_champ}, Opponent: {opponent or "unknown"}, Lane: {active_lane}, Patch: {latest_patch}.
-                """
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a professional LoL coach."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_completion_tokens=800,
-            )
-
-            response_text = response.choices[0].message.content
-            responses_cache[matchup_key] = response_text
-            
-        guidelbl = QLabel(response_text)
-        guidelbl.setFixedHeight(600)
+        guidelbl = QLabel("Loading your guide ...", self)
+        guidelbl.setFixedHeight(700)
         guidelbl.setFixedWidth(650)
         guidelbl.setObjectName("guide")
+        guidelbl.setAlignment(Qt.AlignCenter)
         guidelbl.setWordWrap(True)
 
+        def guide():
+            if matchup_key in responses_cache:
+                return responses_cache[matchup_key]
+            try:
+            
+                response_text = gpt_asnwer(active_champ, active_lane, opponent, latest_patch)
+                responses_cache[matchup_key] = response_text
+                return response_text
+            except Exception as e:
+                import traceback
+                traceback.print_exc()  
+                return f"Error: {str(e)}"
+        
+        def on_done(fut):
+            response_text = fut.result()
+            QMetaObject.invokeMethod(
+                guidelbl,
+                "setText",
+                Qt.QueuedConnection,
+                Q_ARG(str, response_text)
+            )
+        
+        future = self.executor.submit(guide)
+        future.add_done_callback(on_done)
+
+        
         try:
             for player_data in results:
                 if not player_data:
@@ -234,7 +300,7 @@ class Overlay(QWidget):
                 lane = player_data["lane"]
                 summonername = player_data["summname"]
                 rank_name = player_data["rank"]
-                opponent = find_opponent(player_data)
+                
 
                 icon_path = (resource_path(f"icons/{champ_name}.png"))
                 pixlbl = QLabel()
@@ -285,14 +351,25 @@ class Overlay(QWidget):
         blueside.setAlignment(Qt.AlignRight)
         player_row.setObjectName("playerrow")
         player_row.setContentsMargins(0,0,0,0)
-        redside.setContentsMargins(0, 0, 20, 0)
-        blueside.setContentsMargins(20, 0, 0, 0)
+
+        redside.setContentsMargins(40, 10, 20, 10)
+        blueside.setContentsMargins(20, 10, 40, 10)
+
         main_layout.setContentsMargins(0,0,0,0)
+        
+
+        separator = QLabel()
+        separator.setFixedWidth(2)
+        separator.setStyleSheet("background-color: #3A3F4B; border-radius: 1px;")
+
+        separator2 = QLabel()
+        separator2.setFixedWidth(2)
+        separator2.setStyleSheet("background-color: #3A3F4B; border-radius: 1px;")
 
         main_layout.addLayout(blueside)
-        main_layout.addStretch(1)
+        main_layout.addWidget(separator)
         main_layout.addWidget(guidelbl)
-        main_layout.addStretch(1)
+        main_layout.addWidget(separator2)
         main_layout.addLayout(redside)
 
         self.setLayout(main_layout)
