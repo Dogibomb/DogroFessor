@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QShortcut, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QShortcut, QHBoxLayout, QSizePolicy
 from PyQt5.QtGui import QKeySequence, QPixmap
 from PyQt5.QtCore import Qt, QMetaObject, Q_ARG
 from imports import resource_path, standardize_icon
@@ -11,6 +11,9 @@ from user import get_summoners_level, get_puuid, get_real_ranks, check_what_rank
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from openai import OpenAI
 from api_key import API_KEY_OPENAI
+import re
+from bs4 import BeautifulSoup
+from cache import load_cache, save_cache, get_from_cache, set_to_cache
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -30,6 +33,20 @@ def fetch_player_data(player):
                     "champ": champ_name,
                     "summname": summonername,
                     "rank": "BOT",
+                    "lane": lane
+                }
+
+            key = f"{name}#{tag}"
+
+            cached_rank = get_from_cache(key)
+            if cached_rank:
+                return {
+                    "name": name,
+                    "tag": tag,
+                    "team": team,
+                    "champ": champ_name,
+                    "summname": summonername,
+                    "rank": cached_rank,
                     "lane": lane
                 }
 
@@ -60,6 +77,8 @@ def fetch_player_data(player):
             icon, level, rank = result
 
             real_flex_rank, real_solo_duo_rank, *_ = get_real_ranks(rank)
+
+            set_to_cache(key, real_solo_duo_rank)
 
             return {
                 "name": name,
@@ -109,39 +128,51 @@ def rename_champs(champ_name):
 
     return CHAMPION_ALIASES.get(clean, clean)
 
-
-def search_build(champion_name: str):
-    champ = champion_name.lower().replace(" ", "")
+def search_build(active_champ):
     try:
-        url = f"https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champions/{champ}.json"
-        res = requests.get(url)
+        key = f"build_{active_champ.lower()}"
+        cached_item = get_from_cache(key)
+        if cached_item:
+            return cached_item
+        
+        active_champ = active_champ.capitalize()
+        url = f"https://probuilds.net/champions/details/{active_champ}"
+        headers = {
+            "User-Agent":(
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/120.0 Safari/537.36"
+            )
+        }
+        res = requests.get(url, headers=headers, timeout=10)
         if res.status_code != 200:
-            return f"⚠️ Build info for {champion_name} not found on CommunityDragon."
+            return f"⚠️ Failed to fetch data for {active_champ} (HTTP {res.status_code})."
+        
+        soup = BeautifulSoup(res.text, "html.parser")
 
-        data = res.json()
-        spells = [s["name"] for s in data["spells"]]
-        passive = data["passive"]["name"]
-        title = data["title"]
+        item_imgs = soup.select(".aggregate-container .items .item img")
+        if not item_imgs:
+             return f"⚠️ No items found for {active_champ}."
 
-        build_text = f"""
-            ==============================
-            META BUILD INFORMATION
-            ==============================
-            Champion: {data['name']} - {title}
-            Passive: {passive}
-            Spells: {', '.join(spells)}
+        item_ids = []
+        for img in item_imgs:
+            src = img.get("src", "")
+            match = re.search(r"/item/(\d+)\.webp", src)
+            if match:
+                print(item_ids)
+                item_ids.append(match.group(1))
 
-            Recommended Items:
-            - Start: Doran's Blade, Health Potion
-            - Core: Mythic depending on lane (e.g. Stridebreaker, Liandry’s, Eclipse)
-            - Boots: Plated Steelcaps or Mercury’s Treads
-            - Situational: Guardian Angel, Death’s Dance, Thornmail, etc.
-            ==============================
-            """
-        return build_text
+        if not item_ids:
+            return f"⚠️ Could not parse item IDs for {active_champ}."
+
+        
+        build = f"items for {active_champ.title()}:\n" + ", ".join(item_ids)
+        
+        set_to_cache(key, build)
+
+        return build
     except Exception as e:
-        return f"Error fetching build data: {e}"
-    
+        return f"Build failed to load: {e}"
 
 def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
     """
@@ -149,10 +180,7 @@ def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
     + adds AI-generated coaching guide via OpenAI.
     """
     client = OpenAI(api_key=API_KEY_OPENAI)
-
-    # ---- Fetch build info first ----
-    build_info = search_build(active_champ)
-
+    
     # ---- Build the AI prompt ----
     prompt = f"""
         You are an **elite League of Legends coach**. Create a concise, actionable **lane-specific guide** for the following:
@@ -163,11 +191,10 @@ def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
         Patch: {latest_patch}
 
         Include these sections clearly:
-        1. Build (based on current meta)
-        2. Skill Order
-        3. Power Spikes
-        4. Matchup Notes
-        5. Counterplay Tips
+        1. Skill Order
+        2. Power Spikes
+        3. Matchup Notes
+        4. Counterplay Tips
 
         Rules:
         - Max 250 words.
@@ -194,12 +221,12 @@ def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
         ai_text = response.choices[0].message.content.strip()
 
         # Combine both build info + AI text
-        final_output = f"{build_info}\n\n{ai_text}"
+        final_output = f"{ai_text}"
         return final_output
 
     except Exception as e:
         # If OpenAI fails, return only build info
-        return f"{build_info}\n\n⚠️ AI guide generation failed: {e}"
+        return f"\n\n⚠️ AI guide generation failed: {e}"
 
 responses_cache = {}
 
@@ -261,6 +288,31 @@ class Overlay(QWidget):
         guidelbl.setObjectName("guide")
         guidelbl.setAlignment(Qt.AlignCenter)
         guidelbl.setWordWrap(True)
+
+        build_text = search_build(active_champ)
+        item_ids = re.findall(r"\d+", build_text)
+
+        def make_item_layout(items):
+            vbox = QVBoxLayout()
+            vbox.setSpacing(0)
+            vbox.setContentsMargins(0,0,0,0)
+            row_layout = None
+            for i, item_id in enumerate(items):
+                if i % 4 == 0:
+                    row_layout = QHBoxLayout()
+                    row_layout.setSpacing(4)
+                    vbox.addLayout(row_layout)
+                pix = QPixmap(resource_path(f"items_icons/{item_id}.png"))
+                if pix.isNull():
+                    continue  # skip if image missing
+                pix = pix.scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                lbl = QLabel()
+                lbl.setPixmap(pix)
+                lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+                row_layout.addWidget(lbl)
+            return vbox
+
+        
 
         def guide():
             if matchup_key in responses_cache:
@@ -366,9 +418,28 @@ class Overlay(QWidget):
         separator2.setFixedWidth(2)
         separator2.setStyleSheet("background-color: #3A3F4B; border-radius: 1px;")
 
+        title_lbl = QLabel(f"optimal build for {active_champ.lower()}")
+        title_lbl.setAlignment(Qt.AlignCenter)
+        title_lbl.setObjectName("guideTitle")
+
+        item_layout = make_item_layout(item_ids)
+        item_container = QWidget()
+        item_container.setLayout(item_layout)
+        item_container.setFixedHeight(80)
+
+        guide_layout = QVBoxLayout()
+        guide_layout.setAlignment(Qt.AlignTop)
+        guide_layout.addWidget(title_lbl)
+        guide_layout.addWidget(item_container, alignment=Qt.AlignCenter)
+
+        guide_container = QWidget()
+        guide_container.setFixedWidth(650)
+        guide_container.setLayout(guide_layout)
+
+        main_layout.addWidget(guide_container, alignment=Qt.AlignTop)
         main_layout.addLayout(blueside)
         main_layout.addWidget(separator)
-        main_layout.addWidget(guidelbl)
+        # main_layout.addWidget(guide_container, alignment=Qt.AlignCenter)
         main_layout.addWidget(separator2)
         main_layout.addLayout(redside)
 
