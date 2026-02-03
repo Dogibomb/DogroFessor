@@ -56,7 +56,10 @@ class MatchWidget(QWidget):
                 pix = pix.scaled(30, 30, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
-                lbl.setToolTip(item_names[i])
+                if i < len(item_names):
+                    lbl.setToolTip(item_names[i])
+                else:
+                    lbl.setToolTip("Unknown item")
                 lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
                 
                 row_layout.addWidget(lbl)

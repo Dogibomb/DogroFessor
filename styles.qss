@@ -175,7 +175,7 @@ QToolTip {
     border-radius: 10px;
     padding: 8px 12px;
     margin: 4px 0;
-    transition: all 0.2s ease;
+    
 }
 
 #playerrow:hover {
@@ -202,26 +202,15 @@ QLabel#champicon {
     border-radius: 6px;
 }
 
-#guide {
-    background-color: #2B2E35;
-    border-radius: 12px;
-    padding: 20px 25px;
-    font-family: "JetBrains Mono", monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #EAEAEA;
-}
 #guideTitle {
     color: #ff5050;
-    font-size: 20px;
+    font-size: 15px;
     font-weight: bold;
     margin-bottom: 10px;
-    text-transform: lowercase;
 }
 
-#guideText {
-    color: white;
-    font-size: 13px;
-    line-height: 1.4em;
-    padding: 0 15px;
+#buildSection {
+    color: #a0a0a0;
+    font-weight: bold;
+    font-size: 12px;
 }

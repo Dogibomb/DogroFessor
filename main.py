@@ -270,6 +270,7 @@ class MainWindow(QWidget):
 
 
         self.middle_widget = QWidget()
+        
         self.middle_widget_layout = QVBoxLayout(self.middle_widget)
         self.middle_widget_layout.setContentsMargins(0,0,0,0)
         self.middle_widget_layout.setSpacing(8)

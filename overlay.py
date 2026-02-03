@@ -14,6 +14,7 @@ from api_key import API_KEY_OPENAI
 import re
 from bs4 import BeautifulSoup
 from cache import load_cache, save_cache, get_from_cache, set_to_cache
+from playwright.sync_api import sync_playwright
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -115,6 +116,7 @@ CHAMPION_ALIASES = {
 }
 
 def rename_champs(champ_name):
+    
     if isinstance(champ_name, set):
         champ_name = next(iter(champ_name))
 
@@ -128,107 +130,69 @@ def rename_champs(champ_name):
 
     return CHAMPION_ALIASES.get(clean, clean)
 
-def search_build(active_champ):
-    try:
-        key = f"build_{active_champ.lower()}"
-        cached_item = get_from_cache(key)
-        if cached_item:
-            return cached_item
-        
-        active_champ = active_champ.capitalize()
-        url = f"https://probuilds.net/champions/details/{active_champ}"
-        headers = {
-            "User-Agent":(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/120.0 Safari/537.36"
-            )
-        }
-        res = requests.get(url, headers=headers, timeout=10)
-        if res.status_code != 200:
-            return f"⚠️ Failed to fetch data for {active_champ} (HTTP {res.status_code})."
-        
-        soup = BeautifulSoup(res.text, "html.parser")
+def search_build(active_champ, active_lane):
 
-        item_imgs = soup.select(".aggregate-container .items .item img")
-        if not item_imgs:
-             return f"⚠️ No items found for {active_champ}."
+    key = f"{active_champ}_{active_lane}"
 
-        item_ids = []
-        for img in item_imgs:
-            src = img.get("src", "")
-            match = re.search(r"/item/(\d+)\.webp", src)
-            if match:
-                print(item_ids)
-                item_ids.append(match.group(1))
+    cached = get_from_cache(key)
+    if cached:
+        return cached  
 
-        if not item_ids:
-            return f"⚠️ Could not parse item IDs for {active_champ}."
+    WANTED_SECTIONS = ["spells", "items", "situational items"]
+    build_data = {}
 
-        
-        build = f"items for {active_champ.title()}:\n" + ", ".join(item_ids)
-        
-        set_to_cache(key, build)
-
-        return build
-    except Exception as e:
-        return f"Build failed to load: {e}"
-
-def gpt_asnwer(active_champ, active_lane, opponent, latest_patch):
-    """
-    Fetches meta build info (via CommunityDragon)
-    + adds AI-generated coaching guide via OpenAI.
-    """
-    client = OpenAI(api_key=API_KEY_OPENAI)
+    if active_lane is None:
+        URL = f"https://mobalytics.gg/lol/champions/{active_champ}/build/{active_lane}"
+    else:
+        URL = f"https://mobalytics.gg/lol/champions/{active_champ}/build/"
     
-    # ---- Build the AI prompt ----
-    prompt = f"""
-        You are an **elite League of Legends coach**. Create a concise, actionable **lane-specific guide** for the following:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
+        page.goto(URL)
+        page.wait_for_load_state("networkidle")
 
-        Champion: {active_champ}
-        Opponent: {opponent or "unknown"}
-        Lane: {active_lane}
-        Patch: {latest_patch}
+        boxes = page.locator("div.m-owe8v3").all()
 
-        Include these sections clearly:
-        1. Skill Order
-        2. Power Spikes
-        3. Matchup Notes
-        4. Counterplay Tips
+        for box in boxes:
+            h3 = box.locator("h3").first
+            if not h3.count(): continue
+            section_title = h3.inner_text().strip().lower()
+            if section_title not in WANTED_SECTIONS:
+                continue
 
-        Rules:
-        - Max 250 words.
-        - No JSON or bullet lists without context.
-        - Use short, natural sentences.
-        - Give real matchup insights (cooldowns, spikes, trading tips).
+            if section_title == "items":
+                sub_sections = box.locator("div.m-3i8gv9").all()
+                for sub in sub_sections:
+                    h4 = sub.locator("h4").first
+                    if not h4.count(): continue
+                    sub_title = h4.inner_text().strip()
+                    ids = extract_item_ids(sub)
+                    if ids:
+                        build_data[sub_title] = ids
+            else:
+                ids = extract_item_ids(box)
+                if ids:
+                    build_data[section_title.title()] = ids
 
-        Example Style:
-        "At level 3, use your Q-E combo to punish short trades. Hold W for disengage if the jungler is nearby."
+        browser.close()
 
-        Now produce the guide.
-        """
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a professional League of Legends coach with deep meta knowledge."},
-                {"role": "user", "content": prompt}
-            ],
-            max_completion_tokens=600,
-        )
-
-        ai_text = response.choices[0].message.content.strip()
-
-        # Combine both build info + AI text
-        final_output = f"{ai_text}"
-        return final_output
-
-    except Exception as e:
-        # If OpenAI fails, return only build info
-        return f"\n\n⚠️ AI guide generation failed: {e}"
-
-responses_cache = {}
+    if build_data:
+        set_to_cache(key, build_data)  
+        return build_data
+    else:
+        return {}  
+    
+def extract_item_ids(element):
+    """Pomocná funkce na vytažení ID z obrázků v daném elementu"""
+    ids = []
+    imgs = element.locator('img[src*="game-items"]').all()
+    for img in imgs:
+        src = img.get_attribute("src")
+        match = re.search(r"/game-items/(\d+)\.png", src)
+        if match:
+            ids.append(match.group(1))
+    return ids
 
 class Overlay(QWidget):
     def __init__(self):
@@ -244,9 +208,9 @@ class Overlay(QWidget):
         with open(resource_path("styles.qss"), "r") as f:
             self.setStyleSheet(f.read())
 
-        self.setFixedSize(1300, 700)
+        self.setFixedSize(800, 530)
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool)
-
+        
         main_layout = QHBoxLayout(self)
 
         redside = QVBoxLayout()
@@ -258,101 +222,49 @@ class Overlay(QWidget):
             futures = [executor.submit(fetch_player_data, p) for p in players]
             results = [f.result() for f in futures]
 
-        def find_opponent(player):
-            if player["lane"] == "UNKNOWN":
-                return None
-            opposite_team = blue_team if player["team"] == "CHAOS" else red_team
-            for opp in opposite_team:
-                if opp["lane"] == player["lane"]:
-                    return opp["champ"]
-            return None
-
-        red_team = [p for p in results if p["team"] == "CHAOS"]
-        blue_team = [p for p in results if p["team"] == "ORDER"]
-
         local_player = data.get("activePlayer", {}).get("summonerName", None)
         active_data = next((p for p in results if p["summname"] == local_player), None)
-        team = active_data["team"]
         active_lane = active_data["lane"]
         active_champ = rename_champs(active_data["champ"])
-        opponent = find_opponent(active_data)
-
-        latest_patch = "25.20"
-        matchup_key = f"{active_champ}_vs_{opponent}"
 
         self.executor = ThreadPoolExecutor(max_workers=2)
 
-        guidelbl = QLabel("Loading your guide ...", self)
-        guidelbl.setFixedHeight(700)
-        guidelbl.setFixedWidth(650)
-        guidelbl.setObjectName("guide")
-        guidelbl.setAlignment(Qt.AlignCenter)
-        guidelbl.setWordWrap(True)
-
-        build_text = search_build(active_champ)
-        item_ids = re.findall(r"\d+", build_text)
-
         def make_item_layout(items):
             vbox = QVBoxLayout()
-            vbox.setSpacing(0)
-            vbox.setContentsMargins(0,0,0,0)
-            row_layout = None
+            vbox.setSpacing(4)
+            vbox.setContentsMargins(0,0,0,10) 
+            row_layout = QHBoxLayout()
+            row_layout.setSpacing(6)
+            row_layout.setAlignment(Qt.AlignLeft)
+            vbox.addLayout(row_layout)
+            
             for i, item_id in enumerate(items):
-                if i % 4 == 0:
+                if i > 0 and i % 3 == 0: 
                     row_layout = QHBoxLayout()
-                    row_layout.setSpacing(4)
+                    row_layout.setSpacing(6)
+                    row_layout.setAlignment(Qt.AlignLeft)
                     vbox.addLayout(row_layout)
-                pix = QPixmap(resource_path(f"items_icons/{item_id}.png"))
-                if pix.isNull():
-                    continue  # skip if image missing
-                pix = pix.scaled(36, 36, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+
+                pix_path = resource_path(f"items_icons/{item_id}.png")
+                pix = QPixmap(pix_path)
+                if pix.isNull(): continue
+
+                pix = pix.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 lbl = QLabel()
                 lbl.setPixmap(pix)
+                lbl.setObjectName("ItemIcon") 
                 lbl.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
                 row_layout.addWidget(lbl)
             return vbox
 
-        
-
-        def guide():
-            if matchup_key in responses_cache:
-                return responses_cache[matchup_key]
-            try:
-            
-                response_text = gpt_asnwer(active_champ, active_lane, opponent, latest_patch)
-                responses_cache[matchup_key] = response_text
-                return response_text
-            except Exception as e:
-                import traceback
-                traceback.print_exc()  
-                return f"Error: {str(e)}"
-        
-        def on_done(fut):
-            response_text = fut.result()
-            QMetaObject.invokeMethod(
-                guidelbl,
-                "setText",
-                Qt.QueuedConnection,
-                Q_ARG(str, response_text)
-            )
-        
-        future = self.executor.submit(guide)
-        future.add_done_callback(on_done)
-
-        
         try:
             for player_data in results:
-                if not player_data:
-                    continue
-                
-                
+                if not player_data: continue
 
-                team = player_data["team"]
+                p_team = player_data["team"]
                 champ_name = rename_champs(player_data["champ"])
-                lane = player_data["lane"]
                 summonername = player_data["summname"]
                 rank_name = player_data["rank"]
-                
 
                 icon_path = (resource_path(f"icons/{champ_name}.png"))
                 pixlbl = QLabel()
@@ -360,20 +272,16 @@ class Overlay(QWidget):
                 pix = pix.scaled(80, 80, Qt.KeepAspectRatio, Qt.SmoothTransformation)
                 pix = standardize_icon(pix, 80)
                 pixlbl.setPixmap(pix)
-                
-                
+
                 ranklbl = QLabel()
-
                 rank_icon_file = check_what_rank(rank_name) if rank_name else "unranked.png"
-
-                if not rank_icon_file or not os.path.exists(resource_path(f"ranky/{rank_icon_file}")):
-                    rank_icon_file = "unranked.png"
-
-                pixrank = QPixmap(resource_path(f"ranky/{rank_icon_file}"))
-                pixrank = pixrank.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-                pixrank = standardize_icon(pixrank, 50)
-                ranklbl.setPixmap(pixrank)
-                ranklbl.setObjectName("rank")
+                rank_path = resource_path(f"ranky/{rank_icon_file}")
+                pixrank = QPixmap(rank_path)
+                if not pixrank.isNull():
+                    pixrank = pixrank.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+                    ranklbl.setPixmap(pixrank)
+                else:
+                    print(f"Chybí ikona ranku: {rank_path}")
                 
                 summonernamelbl = QLabel(summonername, self)
                 summonernamelbl.setFixedWidth(150)
@@ -383,65 +291,58 @@ class Overlay(QWidget):
                 info = QVBoxLayout()
                 info.addWidget(summonernamelbl)
                 info.addWidget(ranklbl)
-                
-                info.setContentsMargins(0, 0, 0, 0)
+                info.setAlignment(Qt.AlignCenter)
 
-                player_row = QHBoxLayout()
-                if team == "CHAOS":
-                    
+                player_row_widget = QWidget() 
+                player_row_widget.setObjectName("playerrow")
+                player_row = QHBoxLayout(player_row_widget)
+
+                if p_team == "CHAOS":
                     player_row.addLayout(info)
                     player_row.addWidget(pixlbl)
-                    redside.addLayout(player_row)
+                    redside.addWidget(player_row_widget)
                 else:
                     player_row.addWidget(pixlbl)
                     player_row.addLayout(info)
-                    blueside.addLayout(player_row)
-        except KeyError:
-            print("keyerror bro")
+                    blueside.addWidget(player_row_widget)
+        except Exception as e: print(f"Error: {e}")
 
-        redside.setAlignment(Qt.AlignLeft)
-        blueside.setAlignment(Qt.AlignRight)
-        player_row.setObjectName("playerrow")
-        player_row.setContentsMargins(0,0,0,0)
+        redside.addStretch() 
+        blueside.addStretch()
 
-        redside.setContentsMargins(40, 10, 20, 10)
-        blueside.setContentsMargins(20, 10, 40, 10)
+        separator = QLabel(); separator.setFixedWidth(2); separator.setStyleSheet("background-color: #3A3F4B;")
+        separator2 = QLabel(); separator2.setFixedWidth(2); separator2.setStyleSheet("background-color: #3A3F4B;")
 
-        main_layout.setContentsMargins(0,0,0,0)
         
-
-        separator = QLabel()
-        separator.setFixedWidth(2)
-        separator.setStyleSheet("background-color: #3A3F4B; border-radius: 1px;")
-
-        separator2 = QLabel()
-        separator2.setFixedWidth(2)
-        separator2.setStyleSheet("background-color: #3A3F4B; border-radius: 1px;")
-
-        title_lbl = QLabel(f"optimal build for {active_champ.lower()}")
-        title_lbl.setAlignment(Qt.AlignCenter)
-        title_lbl.setObjectName("guideTitle")
-
-        item_layout = make_item_layout(item_ids)
-        item_container = QWidget()
-        item_container.setLayout(item_layout)
-        item_container.setFixedHeight(80)
-
+        build = search_build(active_champ, active_lane)
         guide_layout = QVBoxLayout()
         guide_layout.setAlignment(Qt.AlignTop)
+
+        title_lbl = QLabel(f"Build for {active_champ.capitalize()}")
+        title_lbl.setObjectName("guideTitle")
         guide_layout.addWidget(title_lbl)
-        guide_layout.addWidget(item_container, alignment=Qt.AlignCenter)
 
-        guide_container = QWidget()
-        guide_container.setFixedWidth(650)
-        guide_container.setLayout(guide_layout)
+        if isinstance(build, dict):
+            for section, items in build.items():
+                section_lbl = QLabel(section.upper())
+                section_lbl.setObjectName("buildSection")
+                guide_layout.addWidget(section_lbl)
 
-        main_layout.addWidget(guide_container, alignment=Qt.AlignTop)
-        main_layout.addLayout(blueside)
+                item_container_layout = make_item_layout(items) 
+                w = QWidget()
+                w.setLayout(item_container_layout)
+                guide_layout.addWidget(w)
+        
+        guide_layout.addStretch() 
+
+        left_panel_widget = QWidget()
+        left_panel_widget.setLayout(guide_layout)
+
+        main_layout.addWidget(left_panel_widget, 2)
+        main_layout.addLayout(blueside, 1)
         main_layout.addWidget(separator)
-        # main_layout.addWidget(guide_container, alignment=Qt.AlignCenter)
         main_layout.addWidget(separator2)
-        main_layout.addLayout(redside)
+        main_layout.addLayout(redside, 1)
 
         self.setLayout(main_layout)
 

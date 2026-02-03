@@ -79,19 +79,22 @@ def get_summoners_level(puuid, region):
     return summoners_icon, summoners_level, summoners_rank
 
 def calculate_winrate(summoners_rank):
-    # summoners rank is a info about summoners too lazy to change that
     ranked_info_solo = next((q for q in summoners_rank if q["queueType"] == "RANKED_SOLO_5x5"), None)
     ranked_info_flex = next((q for q in summoners_rank if q["queueType"] == "RANKED_FLEX_SR"), None)
 
-    wins_solo = ranked_info_solo["wins"]
-    losses_solo = ranked_info_solo["losses"]
+    if ranked_info_solo:
+        wins_solo = ranked_info_solo["wins"]
+        losses_solo = ranked_info_solo["losses"]
+        winrate_solo = round((wins_solo / (wins_solo + losses_solo)) * 100)
+    else:
+        winrate_solo = 0
 
-    winrate_solo = round((wins_solo / (wins_solo + losses_solo)) * 100)
-
-    wins_flex = ranked_info_flex["wins"]
-    losses_flex = ranked_info_flex["losses"]
-
-    winrate_flex = round((wins_flex / (wins_flex + losses_flex)) * 100)
+    if ranked_info_flex:
+        wins_flex = ranked_info_flex["wins"]
+        losses_flex = ranked_info_flex["losses"]
+        winrate_flex = round((wins_flex / (wins_flex + losses_flex)) * 100)
+    else:
+        winrate_flex = 0
 
     return winrate_solo, winrate_flex
 
@@ -149,25 +152,40 @@ def get_puuid(name, tag):
     cached = get_from_cache(key)
     if cached:
         return cached
+
     puuid_url_finder = f"https://europe.api.riotgames.com/riot/account/v1/accounts/by-riot-id/{name}/{tag}?api_key={API_KEY}"
-    
     response = requests.get(puuid_url_finder)
-    
+
     if response.status_code == 200:
         data = response.json()
         puuid = data["puuid"]
         set_to_cache(key, puuid)
         return puuid
-    else:
+    elif response.status_code == 401:
+        # špatný/expirující API klíč
         msg = QMessageBox()
-        msg.setText("Ses invalida stejne jako to jmeno")
-        msg.setStyleSheet("""
-            background-color: #2D3848;
-            color: white;
-            font-size: 18px;
-        """)
+        msg.setWindowTitle("API Key Error")
+        msg.setText("❌ Your API key is invalid or expired.")
+        msg.setStyleSheet("background-color: #2D3848; color: white; font-size: 18px;")
         msg.exec_()
         return None
+    elif response.status_code == 404:
+        # špatný summoner
+        msg = QMessageBox()
+        msg.setWindowTitle("Summoner Not Found")
+        msg.setText("❌ Could not find summoner with that Name#Tag.")
+        msg.setStyleSheet("background-color: #2D3848; color: white; font-size: 18px;")
+        msg.exec_()
+        return None
+    else:
+        # ostatní chyby
+        msg = QMessageBox()
+        msg.setWindowTitle("HTTP Error")
+        msg.setText(f"❌ Request failed with status code {response.status_code}")
+        msg.setStyleSheet("background-color: #2D3848; color: white; font-size: 18px;")
+        msg.exec_()
+        return None
+
     
     
     
@@ -181,7 +199,9 @@ def get_icon(icon):
     return None
 
 def check_what_rank(rank):
-    
+    if not rank:
+        return "unranked.png"
+
     rank = rank.lower()
 
     if "iron" in rank:
